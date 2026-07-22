@@ -203,8 +203,16 @@ def main():
     # 安装依赖
     os.chdir(target)
     print("▸ 安装依赖（含 reacticle 最新版，可能要等一会）...")
-    subprocess.run(["npm", "install"], capture_output=True, check=False)
-    subprocess.run(["npm", "install", "reacticle@latest"], capture_output=True, check=False)
+
+    # 支持 NPM_REGISTRY 环境变量（国内镜像）
+    npm_base = ["npm"]
+    registry = os.environ.get("NPM_REGISTRY", "")
+    if registry:
+        print(f"▸ 使用 registry: {registry}")
+        npm_base.extend(["--registry", registry])
+
+    subprocess.run([*npm_base, "install"], capture_output=True, check=False)
+    subprocess.run([*npm_base, "install", "reacticle@latest"], capture_output=True, check=False)
 
     # 获取版本
     try:

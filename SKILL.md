@@ -79,6 +79,40 @@ business-docs/
 
 > 🛑 **检查点 0**：3-5 句话概括，等用户确认。
 
+## 依赖与镜像（开工前检查）
+
+本 skill 的脚本依赖两类包管理器，首次使用前确认可用：
+
+| 工具 | 依赖 | 用途 | 默认 registry |
+|------|------|------|-------------|
+| **npm** | `reacticle`（React 组件库） | Phase 4 scaffold + build | `registry.npmjs.org` |
+| **pip** | `pymysql` / `psycopg2-binary` / `oracledb` / `pymssql` | Phase 2.0 数据库 Schema 抽取 | `pypi.org` |
+
+**国内镜像**：如果默认 registry 连不上或太慢，告诉用户设置镜像后再开工。Agent 不要自动改用户的 registry 配置（那是全局设置）。
+
+```bash
+# npm 淘宝镜像（一次性）
+npm config set registry https://registry.npmmirror.com
+
+# pip 清华镜像（一次性）
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 或者每次临时使用
+npm install --registry=https://registry.npmmirror.com
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pymysql
+```
+
+**如果需要用镜像**：告诉用户设置命令，用户执行后继续。不要静默使用 `--registry` 参数（那样后续 npm install 还是默认源，会不一致）。
+
+**scaffold.py 内置镜像参数**：
+
+```bash
+# 通过环境变量传递
+NPM_REGISTRY=https://registry.npmmirror.com python scripts/scaffold.py ./01-doc --theme=press
+```
+
+脚本读取 `NPM_REGISTRY` 环境变量，如果设置了就用它传 `--registry` 给 npm install。
+
 #### ✅ Phase 1 完成标准
 
 - [ ] 5 个元问题全部答出（每个至少一句话）
@@ -216,7 +250,11 @@ python scripts/analyze-schema.py ./db-analysis/schema-mysql.json
 
 模板 → `references/document-templates.md`
 
-> 🛑 **检查点 1**：列出文档清单+概要，等用户确认。
+**主题选择**：表中"首选主题"是 AI 推荐，不是最终决定。检查点 1 时，用户可以对每份文档选择不同主题。11 个主题速查 → `references/html-rendering.md`，完整 profile → `references/themes/<id>.md`。
+
+**主题不变时统一**：如果所有文档用同一个主题（如全部 `press`），只需在检查点 1 确认一次。如果不同文档想不同主题（全景图用 `freddie` 更轻松、规则用 `tufte` 更严谨），逐份指定。
+
+> 🛑 **检查点 1**：列出文档清单+概要，**每份文档注明推荐主题并给用户选择机会**。确认后继续。
 
 #### ✅ Phase 3 完成标准
 
