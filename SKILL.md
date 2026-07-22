@@ -74,10 +74,39 @@ business-docs/
 
 **Phase 1 第二步 · 项目扫描**：
 1. 读 README、文档目录
-2. 检查 codegraph 是否已初始化（详见 `references/codegraph-guide.md`）：
-   - 已初始化 → `codegraph status` 确认状态 + `codegraph files` 了解结构
-   - 未初始化 → 如果文件 > 50 个，建议 `codegraph init`（一个命令建索引+开启自动同步）；否则 Glob 兜底
-3. **MCP 默认只暴露 `codegraph_explore`**——这一个工具覆盖了绝大多数查询。如果需要 search/node/callers 等，用 CLI：`codegraph query` / `codegraph node` / `codegraph callers`。详见 guide
+2. **CodeGraph 检查与初始化**（完整流程，详见 `references/codegraph-guide.md`）：
+
+   **步骤 A · 检查 CLI 是否安装**：
+   ```bash
+   codegraph --version
+   ```
+   - 已安装 → 进入步骤 B
+   - 未安装 → 告诉用户："CodeGraph 能大幅提升分析效率（89% 更少工具调用），建议安装。" 然后列出命令让用户执行：
+     ```bash
+     # Windows (PowerShell)
+     irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex
+     # macOS / Linux
+     curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+     ```
+     等用户装完后 `codegraph install` 连接 Agent，重启 Agent，再继续步骤 B。
+
+   **步骤 B · 检查项目是否已初始化**：
+   ```bash
+   codegraph status
+   ```
+   - 已初始化 → 确认索引状态（文件数、符号数、待同步文件）+ `codegraph files --max-depth 2` 了解结构
+   - 返回 "not initialized" → 进入步骤 C
+
+   **步骤 C · 帮用户初始化**：
+   文件 > 50 个时，主动告诉用户："我帮你初始化 CodeGraph，一个命令就行。" 然后执行：
+   ```bash
+   codegraph init
+   ```
+   这个命令创建 `.codegraph/` + 构建全图 + 开启自动文件监听。等完成后回到步骤 B 验证。
+   
+   **文件 ≤ 50 个时**：告诉用户"项目不大，Grep/Glob 也够用，可以先跳过。之后随时可以 `codegraph init`。" —— 不强制。
+
+3. **MCP 默认只暴露 `codegraph_explore`**——这一个工具覆盖了绝大多数查询。详细用法 + CLI 备用命令见 `references/codegraph-guide.md`
 
 口述回答 5 个元问题（不写文件）：
 - 解决了**谁的什么问题**？/ **目标用户**（几类）？/ **价值主张**（一句话）？/ 什么**业务领域**？/ **主要能力**（3-7 个）？
