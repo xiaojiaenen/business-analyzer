@@ -70,6 +70,9 @@ business-docs/
 
 **目标**：搞清楚"这是个什么项目"。
 
+**Phase 1 第一步 · 环境检测**：确认用户的 Python 和 Node.js 环境（见上方"环境检测"），确定后续所有脚本的调用方式。如果用户是 uv，后续用 `uv run python`；如果是 conda，后续用 `python`；如果是系统 python3，后续用 `python3`。**只问一次，记住结果**，不要在后续 Phase 重复问。
+
+**Phase 1 第二步 · 项目扫描**：
 1. 读 README、文档目录
 2. `codegraph_files`（如有 codegraph）或 Glob 扫顶层目录
 3. `codegraph_status` 确认索引状态
@@ -79,36 +82,67 @@ business-docs/
 
 > 🛑 **检查点 0**：3-5 句话概括，等用户确认。
 
-## 依赖与镜像（开工前检查）
+## 环境检测（Phase 1 第一步，在分析之前）
 
-本 skill 的脚本依赖两类包管理器，首次使用前确认可用：
+开工先确定用户的 Python 和 Node.js 环境，避免跑到一半发现缺命令。
 
-| 工具 | 依赖 | 用途 | 默认 registry |
-|------|------|------|-------------|
-| **npm** | `reacticle`（React 组件库） | Phase 4 scaffold + build | `registry.npmjs.org` |
-| **pip** | `pymysql` / `psycopg2-binary` / `oracledb` / `pymssql` | Phase 2.0 数据库 Schema 抽取 | `pypi.org` |
+### Python 环境检测
 
-**国内镜像**：如果默认 registry 连不上或太慢，告诉用户设置镜像后再开工。Agent 不要自动改用户的 registry 配置（那是全局设置）。
+按优先级探测（前面的优先）：
+
+| 环境 | 检测命令 | 运行脚本 | 安装包 |
+|------|---------|---------|--------|
+| **uv** | `uv --version` | `uv run python scripts/xxx.py` | `uv pip install pymysql` |
+| **python3** (Linux/Mac) | `python3 --version` | `python3 scripts/xxx.py` | `python3 -m pip install pymysql` |
+| **python** (Windows) | `python --version` | `python scripts/xxx.py` | `python -m pip install pymysql` |
+| **conda** | `conda --version` | `python scripts/xxx.py` | `conda install pymysql` 或 `pip install pymysql` |
+
+**检测标准动作**：
+1. Agent 问一句："你用的是什么 Python 环境？（uv / conda / 系统 python）"
+2. 如果用户不明确，跑 `uv --version` / `python3 --version` / `python --version` 探测
+3. 确定后用对应的命令格式，**不要在 conda 环境里用 `pip install`，不要在 uv 项目里用裸 `python`**
+
+### Node.js 环境检测
+
+| 工具 | 检测 | 用途 |
+|------|------|------|
+| **npm** | `npm --version` | Phase 4 安装 reacticle + 构建 |
+| **pnpm** | `pnpm --version` | 如果用户项目用 pnpm（scaffold 创建的是 npm 工作区，不受影响）|
+| **yarn** | `yarn --version` | 同理，scaffold 用 npm |
+
+**npm 是 scaffold 的硬依赖**——scaffold.py 内部调用 `npm install`。如果用户只有 pnpm/yarn 没有 npm，先装 Node.js（npm 自带）。
+
+### 国内镜像
+
+如果默认 registry 连不上或太慢，**告诉用户命令让用户自己执行**。Agent 不要静默改全局配置。
 
 ```bash
-# npm 淘宝镜像（一次性）
+# === npm 淘宝镜像 ===
 npm config set registry https://registry.npmmirror.com
 
-# pip 清华镜像（一次性）
+# === pip 清华镜像 ===
+# 标准 python
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# uv
+uv pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# conda
+conda config --set show_channel_urls yes
+# （conda 镜像需要配置 .condarc，不在 skill 中展开）
 
-# 或者每次临时使用
+# === 每次临时使用 ===
 npm install --registry=https://registry.npmmirror.com
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pymysql
+uv pip install --index-url https://pypi.tuna.tsinghua.edu.cn/simple pymysql
 ```
 
-**如果需要用镜像**：告诉用户设置命令，用户执行后继续。不要静默使用 `--registry` 参数（那样后续 npm install 还是默认源，会不一致）。
-
-**scaffold.py 内置镜像参数**：
+**scaffold.py 镜像支持**：通过环境变量传递：
 
 ```bash
-# 通过环境变量传递
+# 标准 / conda
 NPM_REGISTRY=https://registry.npmmirror.com python scripts/scaffold.py ./01-doc --theme=press
+
+# uv
+NPM_REGISTRY=https://registry.npmmirror.com uv run python scripts/scaffold.py ./01-doc --theme=press
 ```
 
 脚本读取 `NPM_REGISTRY` 环境变量，如果设置了就用它传 `--registry` 给 npm install。
