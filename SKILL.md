@@ -74,8 +74,10 @@ business-docs/
 
 **Phase 1 第二步 · 项目扫描**：
 1. 读 README、文档目录
-2. `codegraph_files`（如有 codegraph）或 Glob 扫顶层目录
-3. `codegraph_status` 确认索引状态
+2. 检查 codegraph 是否已初始化（详见 `references/codegraph-guide.md`）：
+   - 已初始化 → `codegraph_status` 确认状态 + `codegraph_files` 了解结构
+   - 未初始化 → 如果文件 > 50 个，建议 `codegraph init -i`；否则 Glob 兜底
+3. codegraph 是首选工具：一次 `codegraph_context` ≈ 3-4 次单独搜索，不要手动串联
 
 口述回答 5 个元问题（不写文件）：
 - 解决了**谁的什么问题**？/ **目标用户**（几类）？/ **价值主张**（一句话）？/ 什么**业务领域**？/ **主要能力**（3-7 个）？
@@ -184,7 +186,8 @@ NPM_REGISTRY=https://registry.npmmirror.com uv run python scripts/scaffold.py ./
 
 理由：数据库给出实体和关系（最可靠的事实），实体+角色决定流程的参与者，流程揭示规则，规则+流程+实体共同界定领域边界。按此顺序推进，每一步都建立在前面已确认的事实之上。
 
-方法细节 → `references/analysis-methods.md`。**微服务架构 → `references/microservices-guide.md`。**
+方法细节 → `references/analysis-methods.md`。**微服务架构 → `references/microservices-guide.md`。**  
+**CodeGraph 查询模式** → `references/codegraph-guide.md`（4 种业务分析专用查询模式 + 什么时候不用 CodeGraph）。
 
 #### 2.0 业务入口枚举（微服务优先）
 
@@ -479,6 +482,7 @@ cp 00-index/article/article.html index.html
 | PDF 导出 | `references/pdf-output.md` |
 | **流程图/状态图/泳道图/时序图/ER图** | `references/diagram-guide.md` |
 | **微服务分析**（服务发现/MQ流程/跨服务链路/流程合并） | `references/microservices-guide.md` |
+| **CodeGraph 使用指南**（初始化/查询模式/微服务多仓库） | `references/codegraph-guide.md` |
 | 每个主题的完整 authoring profile | `references/themes/<id>.md` |
 
 ## Scripts 路由表
