@@ -175,6 +175,91 @@ def any_keyword(col_name: str, keywords: list[str]) -> bool:
     return any(kw in col_name.lower() for kw in keywords)
 
 
+def derive_state_machine(col_name: str, col_type: str) -> dict | None:
+    """从 ENUM 字段自动推导状态机。
+    输入: col_type = "enum('pending','paid','shipped','completed','cancelled')"
+    输出: {initialState, normalPath, exceptionPaths, terminalStates} 或 None
+    """
+    import re
+
+    # 匹配 ENUM / enum / set 类型
+    match = re.search(
+        r"(?:enum|ENUM|set|SET)\s*\(([^)]+)\)",
+        col_type, re.IGNORECASE
+    )
+    if not match:
+        return None
+
+    raw = match.group(1)
+    # 提取所有值
+    values = re.findall(r"'([^']*)'", raw)
+    if len(values) < 2:
+        return None
+
+    # 识别终态和异常值
+    terminal_keywords = ["done", "complete", "finish", "success",
+                         "cancel", "fail", "reject", "error",
+                         "refunded", "closed", "archived", "expired", "deleted"]
+    exception_keywords = ["cancel", "fail", "reject", "error", "refund", "dispute"]
+
+    terminal_states = []
+    exception_paths = []
+    normal_states = []
+
+    for i, v in enumerate(values):
+        vl = v.lower()
+        is_terminal = any(kw in vl for kw in terminal_keywords)
+        is_exception = any(kw in vl for kw in exception_keywords)
+
+        if is_terminal:
+            terminal_states.append(v)
+        if is_exception:
+            # 找到异常入口：它前面的那个非异常状态
+            for j in range(i - 1, -1, -1):
+                prev_vl = values[j].lower()
+                if not any(kw in prev_vl for kw in exception_keywords):
+                    exception_paths.append({
+                        "from": values[j],
+                        "to": v,
+                        "reason": _infer_exception_reason(col_name, v),
+                    })
+                    break
+        else:
+            normal_states.append(v)
+
+    # 构建正常路径：排除异常值后的顺序
+    normal_path = [v for v in values
+                   if not any(kw in v.lower() for kw in exception_keywords)]
+
+    return {
+        "fieldName": col_name,
+        "allValues": values,
+        "initialState": values[0],
+        "normalPath": normal_path,
+        "exceptionPaths": exception_paths,
+        "terminalStates": terminal_states,
+        "valueCount": len(values),
+    }
+
+
+def _infer_exception_reason(field_name: str, value: str) -> str:
+    """从状态值推测异常原因的中文描述"""
+    vl = value.lower()
+    if "cancel" in vl:
+        return "取消"
+    if "fail" in vl:
+        return "失败"
+    if "reject" in vl:
+        return "驳回"
+    if "refund" in vl:
+        return "退款"
+    if "error" in vl:
+        return "异常"
+    if "dispute" in vl:
+        return "争议"
+    return "异常终止"
+
+
 # ============================================================
 # 分析引擎
 # ============================================================
@@ -242,7 +327,11 @@ def analyze_tables(databases: list[dict]) -> dict:
                         })
 
                     if any_keyword(col_name, STATUS_KEYWORDS):
-                        entity["statusColumns"].append(entry)
+                        sm = derive_state_machine(col_name, col_type)
+                        if sm:
+                            entity["statusColumns"].append({**entry, "derivedStateMachine": sm})
+                        else:
+                            entity["statusColumns"].append(entry)
 
                     if any_keyword(col_name, AMOUNT_KEYWORDS):
                         entity["amountColumns"].append(entry)

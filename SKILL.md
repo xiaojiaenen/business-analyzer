@@ -95,10 +95,12 @@ python scripts/analyze-schema.py ./db-analysis/schema-mysql.json
 | 维度 | 方法 | 产出 |
 |------|------|------|
 | 业务实体 | codegraph_search model/entity 符号 或 Grep struct/class/type/CREATE TABLE | 实体清单+属性+生命周期+关系 |
-| 业务流程 | codegraph_context 追踪链路 或 读路由定义追踪用户操作 | 3-8 条流程图（ASCII+异常分支） |
+| 业务流程 | codegraph_context 追踪链路 或 读路由定义追踪用户操作 | 3-8 条流程图 + 状态迁移图 |
 | 业务规则 | Grep validate/check/rule/policy/constraint/limit | 规则清单（触发条件+动作+原因） |
 | 用户角色 | Grep role/permission/auth/middleware | 角色画像+权限矩阵 |
 | 领域划分 | 归纳为 2-5 个 bounded context | 按业务能力切割 |
+
+**业务流程的可视化**：Phase 4 渲染时，按图表决策树选择方案。详见 `references/diagram-guide.md`（Mermaid 流程图/状态图/时序图/ER图 + 内联 SVG 泳道图 + ENUM→状态机自动推导）。
 
 ---
 
@@ -201,6 +203,7 @@ python scripts/analyze-schema.py ./db-analysis/schema-mysql.json
 | 修复政策 | `references/repair-policy.md` |
 | 构建与交付命令 | `references/html-output.md` |
 | PDF 导出 | `references/pdf-output.md` |
+| **流程图/状态图/泳道图/时序图/ER图** | `references/diagram-guide.md` |
 | 每个主题的完整 authoring profile | `references/themes/<id>.md` |
 
 ## Scripts 路由表
