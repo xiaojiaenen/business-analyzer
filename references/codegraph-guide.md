@@ -1,217 +1,270 @@
 # CodeGraph 使用指南
 
-CodeGraph 是 tree-sitter 驱动的代码知识图谱，将项目中的每个符号、文件、调用关系预先索引到 SQLite。本 skill 在 Phase 1、Phase 2 中大量使用 CodeGraph 进行业务分析。本文档是 CodeGraph 在 business-analyzer 场景下的最佳实践。
+CodeGraph 是 Rust 内核的代码知识图谱（tree-sitter 解析 + SQLite 存储），将每个符号、调用边、文件预先索引。本 skill 在 Phase 1/2 大量使用它进行业务分析。
 
-> CodeGraph 仓库：https://github.com/colbymchenry/codegraph  
-> 初始化：`codegraph init -i`（在项目根目录执行，约 30 秒-2 分钟，视项目大小）
-
----
-
-## 工具速查
-
-| 工具 | 一句话 | 本 skill 主要用在哪 |
-|------|--------|-------------------|
-| `codegraph_status` | 索引状态（健康？多大？） | Phase 1 — 确认索引可用 |
-| `codegraph_files` | 文件树，比 Glob 快 100 倍 | Phase 1 — 了解项目结构 |
-| `codegraph_search` | 按名称搜符号 | Phase 2 — 找特定实体/函数 |
-| `codegraph_context` | **最常用** — 搜索+节点+调用者+被调用者 合一 | Phase 2 — 理解业务概念 |
-| `codegraph_explore` | 批量查看多个符号的源码 | Phase 2 — 扫一批相关实体 |
-| `codegraph_node` | 单个符号的详情（位置+签名+源码） | Phase 2 — 深入一个关键符号 |
-| `codegraph_callers` | 谁调用了这个符号 | Phase 2.2 — 追踪调用链上游 |
-| `codegraph_callees` | 这个符号调用了谁 | Phase 2.2 — 追踪调用链下游 |
-| `codegraph_impact` | 改了这符号会影响什么 | Phase 2.5 — 理解模块边界 |
+> 仓库：https://github.com/colbymchenry/codegraph  
+> 官网文档：https://colbymchenry.github.io/codegraph/
 
 ---
 
-## 初始化
+## 安装与初始化
+
+### 安装 CLI（用户执行，agent 不能代劳）
 
 ```bash
-# 在项目根目录执行
-codegraph init -i
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex
+
+# 或者 npm（已有 Node 时）
+npm i -g @colbymchenry/codegraph
 ```
 
-**什么时候建议初始化**：
-- 项目文件 > 50 个 → 强烈建议（Grep 效率开始下降）
-- 项目文件 > 200 个 → 几乎必须（Grep 遍历已经太慢）
-- 微服务架构 → 每个服务单独 init（在不同目录分别执行）
+CLI 自带了 Node 运行时，不需要本机装 Node.js。
 
-**什么时候不强制**：
-- 项目 < 20 个文件 → Grep/Glob 够用
-- 用户明确说不要 → 尊重
+### 连接 Agent
+
+```bash
+codegraph install
+```
+
+这个交互式安装器会**自动探测已安装的 Agent（Claude Code / Cursor / Codex / opencode / Hermes / Gemini / Antigravity / Kiro）**，写入 MCP 配置 + 指令文件 + 权限。**这一步只配置不索引**，索引在下一步。
+
+非交互式：
+```bash
+codegraph install --yes                          # 自动探测，全局安装
+codegraph install --target=claude,cursor --yes   # 指定目标
+codegraph install --location=local               # 项目本地配置
+```
+
+### 初始化项目
+
+```bash
+cd your-project
+codegraph init
+```
+
+**一个命令 = 创建 `.codegraph/` + 构建全图**。之后文件监听器自动保持索引同步（FSEvents/inotify/ReadDirectoryChangesW），零配置，不需要手动 `codegraph sync`。
+
+### 升级
+
+```bash
+codegraph upgrade          # 升级到最新
+codegraph upgrade --check  # 只看不升
+```
+
+---
+
+## 工具速查（MCP 模式）
+
+**默认只暴露一个工具**：`codegraph_explore`。CodeGraph 设计哲学是"一个强工具比多个窄工具更能引导 agent 走对路"。
+
+| 工具 | MCP 默认 | 用途 | 本 skill 主要用在哪 |
+|------|---------|------|-------------------|
+| `codegraph_explore` | ✅ 暴露 | **几乎所有问题的首选** — 一次返回相关符号的源码 + 调用路径 + blast-radius | Phase 2 全程 |
+| `codegraph_node` | ❌ 需启用 | 单个符号详情 + 源码 + 调用者 | 深入关键符号 |
+| `codegraph_search` | ❌ 需启用 | 按名称搜符号 | 找特定实体 |
+| `codegraph_files` | ❌ 需启用 | 文件树，比 Glob 快 100 倍 | Phase 1 了解结构 |
+| `codegraph_callers` | ❌ 需启用 | 谁调用了这个符号 | 追踪调用链上游 |
+| `codegraph_callees` | ❌ 需启用 | 这个符号调用了谁 | 追踪调用链下游 |
+| `codegraph_impact` | ❌ 需启用 | 改了它会影响什么 | Phase 2.5 领域划分 |
+| `codegraph_status` | ❌ 需启用 | 索引统计 | Phase 1 确认索引可用 |
+
+**如何启用更多工具**：在 MCP server 环境变量中设置：
+```
+CODEGRAPH_MCP_TOOLS=explore,node,search,callers,callees,impact,files,status
+```
+
+**即使 MCP 不暴露，CLI 永远可用**：
+```bash
+codegraph query "Order"          # codegraph_search 的 CLI 等价
+codegraph explore "order flow"   # codegraph_explore 的 CLI 等价
+codegraph node "OrderService"    # codegraph_node 的 CLI 等价
+codegraph files                  # codegraph_files 的 CLI 等价
+codegraph callers "createOrder"  # codegraph_callers 的 CLI 等价
+codegraph callees "createOrder"  # codegraph_callees 的 CLI 等价
+codegraph impact "Order.status"  # codegraph_impact 的 CLI 等价
+codegraph status                 # codegraph_status 的 CLI 等价
+```
+
+---
+
+## 核心使用原则
+
+### Principle #1：`codegraph_explore` 几乎永远是首选
+
+一次调用返回：入口符号的源码 + 调用链 + 相关符号 + blast-radius 摘要。对于"X 是怎么工作的"、"追踪从 A 到 B 的链路"、"扫描一个区域"这三类问题，`codegraph_explore` 一次就够了。
+
+**错误做法**（4 次工具调用）：
+```
+codegraph_search "Order" → 找到符号
+codegraph_node "OrderService" → 看定义
+codegraph_callers "OrderService" → 看谁调
+codegraph_callees "OrderService" → 看调了谁
+```
+
+**正确做法**（1 次）：
+```
+codegraph_explore "订单创建流程从 Controller 到数据库"
+```
+
+### Principle #2：相信结果，不要 grep 验证
+
+CodeGraph 返回的是 AST 级别的精确结果。用 `grep` 去"验证"它等于用文本匹配挑战 AST 解析——后者更准确。
+
+### Principle #3：信任 staleness banner
+
+文件编辑后索引有 debounce（默认 2 秒）。如果在此期间查询，MCP 响应会带 `⚠️` banner 告诉你哪个文件还未同步，并建议直接 `Read`。Agent 看到 banner 就读文件。
 
 ---
 
 ## Phase 1 · 项目扫描
 
-### 判断项目结构
-
 ```bash
 # 确认索引状态
-codegraph_status
-# → 输出: 文件数、符号数、边数、最后索引时间
+codegraph status
+# → 索引文件数、符号数、边数、是否有待同步文件
 
-# 查看顶层目录（了解项目骨架）
-codegraph_files --maxDepth 2
-# → 树形结构，每个文件标注语言和符号数
+# 看项目骨架
+codegraph files --max-depth 2
+# → 树形结构，含语言和符号数
 
-# 按语言分组查看
-codegraph_files --format grouped
-# → "TypeScript: 120 files / Go: 45 files / Rust: 30 files"
-```
+# 按语言分组
+codegraph files --format grouped
 
-### 定位业务相关目录
-
-```bash
-# 只查看特定目录
-codegraph_files --path src/services
-codegraph_files --path apps
-# → 快速了解哪些目录是业务代码（vs 工具库/测试/文档）
+# 只看特定目录
+codegraph files --path src/services
 ```
 
 ---
 
-## Phase 2 · 业务分析（CodeGraph 最密集使用的阶段）
-
-### Principle #1：用 `codegraph_context`，不要串行搜索
-
-**错误做法**（3 次工具调用）：
-```
-codegraph_search "Order" → 找到 OrderService, OrderController
-codegraph_node "OrderService" → 看签名
-codegraph_callers "OrderService" → 看谁调它
-```
-
-**正确做法**（1 次工具调用）：
-```
-codegraph_context "订单创建流程"
-```
-一次返回：OrderService 定义 + createOrder 源码 + 调用者列表 + 被调用列表 + 相关符号。
-
-### 寻找业务实体（Phase 2.1）
-
-```bash
-# 搜索 model/entity 相关符号
-codegraph_search "model" --kind class
-codegraph_search "entity" --kind class
-codegraph_search "schema" --kind type
-
-# 批量查看实体源码（一次看多个，不要逐个 node）
-codegraph_explore "Order User Product Payment Inventory"
-# → 按文件分组返回所有源码，带调用关系图
-
-# 深入单个复杂实体
-codegraph_node "Order" --includeCode true
-# → 返回 Order 类的完整定义、所有字段、方法签名
-```
-
-### 反向还原业务流程（Phase 2.2）
-
-```bash
-# 从 API 路由出发追踪一条链路
-codegraph_context "create order flow from api to database"
-# → 返回路由→Controller→Service→Repository 的完整路径
-
-# 想了解调用链的下游
-codegraph_callees "OrderService.createOrder"
-# → createOrder 内部调了哪些函数（库存检查？支付？通知？）
-
-# 想了解调用链的上游
-codegraph_callers "InventoryService.reserveStock"
-# → 哪些地方调用了库存锁定（只有 OrderService？还是还有管理后台？）
-```
-
-### 分析影响范围（Phase 2.5 领域划分）
-
-```bash
-# 改了订单状态会炸到哪些模块
-codegraph_impact "Order.status" --depth 2
-# → 第一层: 谁直接读了 order.status
-# → 第二层: 这些读的人又被谁依赖
-# → 用这个判断"订单"相关的领域边界在哪
-```
-
----
-
-## 业务分析专用查询模式
+## Phase 2 · 业务分析的 4 种查询模式
 
 ### 模式 1：从业务概念出发
 
 ```
 用户问："这个系统怎么处理退款的？"
-→ codegraph_context "refund flow" 
-→ 返回 RefundService、退款状态机、谁调用了退款、退款调用了谁
+→ codegraph_explore "refund flow from API to database"
+→ 一次返回 RefundService 源码 + 调用链 + 谁调用了退款 + 退款状态机
 → agent 翻译为业务流程
 ```
 
 ### 模式 2：从 API 路由出发
 
 ```
-用户没问具体问题，要做全面分析
-→ codegraph_search "Router" --kind function
-→ 找到所有路由定义
-→ 逐条 codegraph_context "POST /api/orders 的完整处理链路"
+→ codegraph_explore "POST /api/orders 的完整处理链路"
+→ 返回 Controller → Service → Repository 的完整源码 + 调用图
 ```
+
+CodeGraph 能识别 17 种框架的路由定义（Express, Flask, FastAPI, Django, Spring, Gin, Rails, Laravel, ASP.NET, NestJS, Axum, Rocket, Vapor, React Router, SvelteKit, Vue/Nuxt, Astro），自动生成 `route` 节点连接 URL 到 handler。
 
 ### 模式 3：从数据库表出发
 
 ```
 analyze-schema.py 给出了 orders 表
-→ codegraph_search "orders" --kind type
-→ codegraph_context "orders 表对应的 ORM model"
-→ 找到所有读写 orders 表的代码
-→ 反向还原谁在什么时候改了 order.status
+→ codegraph_explore "orders table ORM model and all code that writes to it"
+→ 找到所有读写 orders 的代码
+→ 反向还原谁在什么时候改了什么字段
 ```
 
 ### 模式 4：从定时任务出发
 
 ```
-codegraph_search "@Scheduled" --kind function
-codegraph_search "cron" --kind function
-→ 找到所有定时任务
-→ 逐个 codegraph_context
+→ codegraph_explore "scheduled tasks and cron jobs"
+→ 找到所有 @Scheduled / cron / setInterval
 → 得到定时触发的业务流程
 ```
 
 ---
 
-## 灰色地带：什么时候不用 CodeGraph
+## 框架感知路由（17 种框架）
 
-| 场景 | 为什么不用 | 用什么 |
-|------|-----------|--------|
-| 搜索**字符串内容**（错误消息、日志文本、UI 文案） | CodeGraph 索引的是符号和结构，不是字面量 | `grep -r "支付失败" --include="*.ts"` |
-| 搜索**注释** | 注释不在索引中 | `grep -r "TODO\|FIXME\|HACK"` |
-| 搜索**配置文件**（YAML/JSON/TOML） | CodeGraph 支持有限 | `grep` 或直接 `Read` |
-| 项目文件 < 20 个 | 启动 CodeGraph 的开销比直接读更大 | Glob + Read |
-| 刚改了文件立即查询 | 索引有 ~500ms 延迟 | 等半秒，或直接用 Read 看刚改的文件 |
+CodeGraph 自动识别 Web 框架的路由文件并生成 `route` 节点。对业务分析来说这极其重要——**查询一个 handler 的调用者就能看到绑定的 URL**。
+
+| 框架 | 识别 |
+|------|------|
+| Express | `app.get(...)`, `router.post(...)` |
+| Flask | `@app.route(...)` |
+| FastAPI | `@app.get(...)`, `@router.post(...)` |
+| Django | `path()`, `url()` in `urls.py` |
+| Spring | `@GetMapping`, `@PostMapping` |
+| NestJS | `@Controller` + `@Get/@Post`, GraphQL `@Resolver`, `@MessagePattern` |
+| Gin / chi / gorilla / mux | `r.GET(...)`, `router.HandleFunc(...)` |
+| Axum / actix / Rocket | `.route("/x", get(handler))` |
+| Laravel | `Route::get()`, `Route::resource()` |
+| Rails | `get '/x', to: 'users#index'` |
+| ASP.NET | `[HttpGet("/x")]` |
+| Vapor | `app.get("x", use: handler)` |
+| React Router / SvelteKit | Route component nodes |
+| Vue / Nuxt | `pages/` file-based routes |
+| Astro | `src/pages/` file-based routes |
 
 ---
 
-## 微服务场景
+## 什么时候不用 CodeGraph
 
-CodeGraph 是**单仓库**索引——如果微服务是 monorepo（一个仓库包含所有服务），一个 `codegraph init -i` 即可。如果是多仓库：
+| 场景 | 为什么 | 用什么 |
+|------|--------|------|
+| 搜索**字符串字面量**（错误消息、UI 文案、日志文本） | CodeGraph 索引的是符号和结构，不是字面量 | `grep -r` |
+| 搜索**注释** | 注释不在符号索引中 | `grep -r` |
+| 搜索**配置文件**（YAML/JSON/TOML 内的业务参数） | CodeGraph 对这些文件的支持参差不齐 | `grep` 或 `Read` |
+| 项目 < 20 个文件 | CodeGraph 的索引开销 > 直接读取 | Glob + Read |
+| 刚写完文件立即查询 | 有 ~2 秒 debounce | 直接 `Read` 刚写的文件，或等 debounce 结束查看 staleness banner |
 
-```
+---
+
+## 微服务多仓库
+
+CodeGraph 是单仓库索引。多仓库场景：
+
+```bash
 # 每个仓库单独 init
-cd order-service && codegraph init -i
-cd inventory-service && codegraph init -i
-# 查询时用 --projectPath 切换
-codegraph_context "order flow" --projectPath ../order-service
+cd order-service && codegraph init
+cd inventory-service && codegraph init
+
+# MCP 工具查询时传 projectPath
+codegraph_explore "order flow" --projectPath ../order-service
 ```
+
+同一个 session 里可以查询多个已索引的项目，没索引的路径会返回干净的降级提示。
 
 ---
 
-## 性能提示
+## 配置（可选）
 
-- `codegraph_context` 通常是最优选择——一次调用完成 3-4 次其他调用的工作
-- `codegraph_explore` 用于批量查看（5-15 个符号），比逐个 `codegraph_node` 省 3-5 倍 token
-- `codegraph_files` 比 `ls`/`tree`/`Glob` 快得多，而且带了语言和符号数元数据
-- 如果 CodeGraph 返回"not initialized"，问用户一句要不要 `codegraph init -i`，不要静默跳过
+项目根目录的 `codegraph.json`：
+
+```json
+{
+  "extensions": { ".dota_lua": "lua", ".tpl": "php" },
+  "exclude": ["static/vendor/theme/"],
+  "include": ["Tools/local/"]
+}
+```
+
+- `extensions`：映射非标准后缀到已知语言
+- `exclude`：额外排除目录（gitignore 之外的）
+- `include`：强制纳入被 gitignore 排除的源码
+
+---
+
+## 卸载
+
+```bash
+codegraph uninstall          # 从所有 Agent 移除 + 卸载 CLI
+codegraph uninstall --keep-cli  # 只移除 Agent 配置，保留 CLI
+codegraph uninit              # 删项目的 .codegraph/（需要确认）
+```
 
 ---
 
 ## 核心提醒
 
-- **CodeGraph 是预建索引，不是搜索引擎**：返回的是 AST 级别的精确结果，不是模糊匹配
-- **相信 CodeGraph 的结果**：不要用 `grep` 去验证它——grep 是文本匹配，CodeGraph 是 AST 解析，后者更准确
-- **一次 `codegraph_context` > 四次单独调用**：不要手动串联 search + node + callers + callees
-- **指数延迟 ~500ms**：写完文件后等半秒再查
+- **`codegraph_explore` 是第一公民**：几乎所有问题都用它，不要手动串 search+node+callers+callees
+- **CodeGraph 是预建索引，不是搜索引擎**：返回 AST 级精确结果
+- **相信 CodeGraph 的结果**：不要用 grep 验证
+- **注意 staleness banner**：编辑后 2 秒内查询会有提醒，收到就 Read 文件
+- **MCP 工具默认只有 `explore`**：需要其他工具时用 CLI 等价命令或设 `CODEGRAPH_MCP_TOOLS`
+- **`codegraph affected`**：从 git diff 出发，追踪哪些测试文件受影响的变更影响——CI/PR 场景很实用

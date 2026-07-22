@@ -1,4 +1,4 @@
----
+﻿---
 name: business-analyzer
 description: 对任何代码项目进行深度业务领域分析，产出一套面向零基础读者的精美 HTML 文档（业务全景图、领域模型、业务流程、关键概念等）。内建数据库只读抽取（MySQL/PG/Oracle/Doris/SQLServer 自动检测+Schema导出）、codegraph 代码索引、reacticle 渲染引擎（11 主题 + scaffolds + 完整 harness）。触发词：分析业务、了解业务、业务文档、领域分析、business analysis、domain analysis、业务全景、业务流程分析、帮我搞懂这个项目、新人上手业务、业务知识库、项目是干什么的、业务梳理。当用户提到想"从业务角度理解项目"、"零基础学业务"、"梳理领域知识"、"给新人做业务文档"时，果断使用本 skill。
 ---
@@ -75,9 +75,9 @@ business-docs/
 **Phase 1 第二步 · 项目扫描**：
 1. 读 README、文档目录
 2. 检查 codegraph 是否已初始化（详见 `references/codegraph-guide.md`）：
-   - 已初始化 → `codegraph_status` 确认状态 + `codegraph_files` 了解结构
-   - 未初始化 → 如果文件 > 50 个，建议 `codegraph init -i`；否则 Glob 兜底
-3. codegraph 是首选工具：一次 `codegraph_context` ≈ 3-4 次单独搜索，不要手动串联
+   - 已初始化 → `codegraph status` 确认状态 + `codegraph files` 了解结构
+   - 未初始化 → 如果文件 > 50 个，建议 `codegraph init`（一个命令建索引+开启自动同步）；否则 Glob 兜底
+3. **MCP 默认只暴露 `codegraph_explore`**——这一个工具覆盖了绝大多数查询。如果需要 search/node/callers 等，用 CLI：`codegraph query` / `codegraph node` / `codegraph callers`。详见 guide
 
 口述回答 5 个元问题（不写文件）：
 - 解决了**谁的什么问题**？/ **目标用户**（几类）？/ **价值主张**（一句话）？/ 什么**业务领域**？/ **主要能力**（3-7 个）？
@@ -232,8 +232,8 @@ python scripts/analyze-schema.py ./db-analysis/schema-mysql.json
 
 | 维度 | 方法 | 产出 |
 |------|------|------|
-| 业务实体 | codegraph_search model/entity 符号 或 Grep struct/class/type/CREATE TABLE | 实体清单+属性+生命周期+关系 |
-| 业务流程 | codegraph_context 追踪链路 或 读路由定义追踪用户操作 | 3-8 条流程图 + 状态迁移图 |
+| 业务实体 | `codegraph_explore` 搜 model/entity 相关源码 或 Grep struct/class/type/CREATE TABLE | 实体清单+属性+生命周期+关系 |
+| 业务流程 | `codegraph_explore` 追踪链路（支持 17 种框架路由识别）或 读路由定义追踪用户操作 | 3-8 条流程图 + 状态迁移图 |
 | 业务规则 | Grep validate/check/rule/policy/constraint/limit | 规则清单（触发条件+动作+原因） |
 | 用户角色 | Grep role/permission/auth/middleware | 角色画像+权限矩阵 |
 | 领域划分 | 归纳为 2-5 个 bounded context | 按业务能力切割 |
@@ -396,7 +396,7 @@ cp 00-index/article/article.html index.html
 | 项目路径不存在/为空 | 停下告诉用户，不做任何事 |
 | 数据库连不上 | 跳过 2.0，从 2.1 代码维度开始。Phase 2 完成标准中"实体 ≥ 5 个"仍适用 |
 | 缺 Python 驱动 | 提示 `pip install pymysql/psycopg2-binary/oracledb/pymssql`，同时从代码继续分析 |
-| codegraph 未初始化 | 建议 `codegraph init -i`（大幅提升效率），Grep/Glob 兜底 |
+| codegraph 未初始化 | 建议 `codegraph init`（一个命令创建+索引，之后自动同步），Grep/Glob 兜底 |
 | 业务概念不确定 | 标注 `<!-- UNCERTAIN: 待用户确认 -->`，在检查点向用户提问，**不编造业务逻辑** |
 
 ### Phase 4 构建失败恢复（硬约束）
