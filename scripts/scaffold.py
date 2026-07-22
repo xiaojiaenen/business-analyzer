@@ -18,6 +18,12 @@ import json
 import os
 import re
 import shutil
+import sys
+
+# Windows: 强制 stdout/stderr 使用 UTF-8，避免中文乱码
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import subprocess
 import sys
 from pathlib import Path

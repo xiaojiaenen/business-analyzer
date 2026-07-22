@@ -21,6 +21,12 @@ import os
 import shutil
 import subprocess
 import sys
+
+# Windows: 强制 stdout/stderr 使用 UTF-8
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+import sys
 import tempfile
 from pathlib import Path
 
