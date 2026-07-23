@@ -2,13 +2,16 @@
 """
 db-introspect.py — 数据库结构只读抽取（多数据库支持）
 
-支持的数据库：MySQL / MariaDB / PostgreSQL / Oracle / Doris / SQL Server
+支持的数据库：MySQL / MariaDB / PostgreSQL / Oracle / Doris / SQL Server / SQLite
 
 用法：
-  # 自动从项目代码中检测连接信息
+  # 自动从项目代码中检测连接信息（含 SQLite .db 文件）
   python db-introspect.py --auto-detect <project-dir>
 
-  # 手动指定连接
+  # 手动指定连接（SQLite）
+  python db-introspect.py --type sqlite --db /path/to/data.db
+
+  # 手动指定连接（其他数据库）
   python db-introspect.py --type mysql --host 192.168.1.1 --user root --pass 123456 --db mydb
   python db-introspect.py --type postgres --host localhost --user postgres --db mydb
   python db-introspect.py --type sqlserver --host localhost --user sa --pass xxx --db mydb
@@ -17,6 +20,7 @@ db-introspect.py — 数据库结构只读抽取（多数据库支持）
 
 安全保证：
   - 所有 SQL 查询均为系统 catalog / information_schema 的只读 SELECT
+  - SQLite 使用只读模式打开（mode=ro）
   - 绝不执行 INSERT / UPDATE / DELETE / DROP / CREATE / ALTER / TRUNCATE
   - 自动检测模式下仅读取配置文件，不修改任何代码
 """
@@ -27,6 +31,7 @@ import os
 import re
 import sys
 from datetime import datetime
+from pathlib import Path
 
 # Windows: 强制 stdout/stderr 使用 UTF-8
 if sys.platform == "win32":
@@ -46,7 +51,10 @@ def find_connection_info(project_dir: str) -> list[dict]:
       - database.yml / database.json / config.js / config.ts
       - Python settings.py / Django settings
       - 代码中的连接字符串常量
+      - SQLite .db / .sqlite / .sqlite3 文件（直接检测）
     """
+    import glob as g
+
     connections = []
     scanned_files = []
 
@@ -72,7 +80,6 @@ def find_connection_info(project_dir: str) -> list[dict]:
     ]
 
     for pattern in patterns:
-        import glob as g
         for filepath in g.glob(os.path.join(project_dir, pattern), recursive=True):
             if filepath in scanned_files:
                 continue
@@ -84,6 +91,36 @@ def find_connection_info(project_dir: str) -> list[dict]:
                 connections.extend(found)
             except Exception:
                 pass  # 无法读取就跳过
+
+    # SQLite 文件自动发现（直接扫描 .db / .sqlite / .sqlite3 文件）
+    sqlite_extensions = ("*.db", "*.sqlite", "*.sqlite3", "*.sqlite")
+    exclude_dirs = {"node_modules", "__pycache__", ".git", "venv", ".venv",
+                    "venv38", "env", "dist", "build", ".license"}
+    for ext in sqlite_extensions:
+        for filepath in g.glob(os.path.join(project_dir, f"**/{ext}"), recursive=True):
+            # 跳过排除目录
+            parts = set(Path(filepath).parts)
+            if parts & exclude_dirs:
+                continue
+            if filepath in scanned_files:
+                continue
+            scanned_files.append(filepath)
+            # 验证是 SQLite 文件（读文件头）
+            try:
+                with open(filepath, "rb") as f:
+                    header = f.read(16)
+                if header[:16] == b"SQLite format 3\x00" or header[:6] == b"SQLite":
+                    connections.append({
+                        "db_type": "sqlite",
+                        "sqlite_file": filepath,
+                        "host": "localhost",
+                        "port": 0,
+                        "user": "",
+                        "password": "",
+                        "database": filepath,
+                    })
+            except Exception:
+                pass
 
     # 去重
     unique = []
@@ -770,6 +807,98 @@ class SQLServerIntrospector(Introspector):
         }
 
 
+class SQLiteIntrospector(Introspector):
+    """SQLite（Python 内置 sqlite3，零依赖）"""
+
+    def connect(self) -> bool:
+        try:
+            import sqlite3
+            db_path = self.info.get("sqlite_file") or self.info.get("database", "")
+            if not db_path:
+                return False
+            # 允许相对路径（相对于当前工作目录）
+            p = Path(db_path)
+            if not p.is_absolute():
+                p = Path.cwd() / p
+            if not p.exists():
+                return False
+            db_uri = str(p.resolve())
+            self.connection = sqlite3.connect(f"file:{db_uri}?mode=ro", uri=True)
+            return True
+        except Exception:
+            return False
+
+    def extract(self) -> dict:
+        import sqlite3
+        cursor = self.connection.cursor()
+
+        # 获取所有用户表
+        cursor.execute(
+            "SELECT name, sql FROM sqlite_master "
+            "WHERE type='table' AND name NOT LIKE 'sqlite_%' "
+            "ORDER BY name"
+        )
+        table_rows = cursor.fetchall()
+
+        tables = []
+        for (table_name, create_sql) in table_rows:
+            # 用 PRAGMA table_info 获取列信息
+            cursor.execute(f"PRAGMA table_info(\"{table_name}\")")
+            col_rows = cursor.fetchall()
+
+            columns = []
+            pk_columns = set()
+            for (cid, col_name, col_type, not_null, default, is_pk) in col_rows:
+                if is_pk:
+                    pk_columns.add(col_name)
+                columns.append({
+                    "name": col_name,
+                    "position": cid,
+                    "type": col_type or "TEXT",
+                    "nullable": not not_null,
+                    "defaultValue": str(default) if default is not None else None,
+                    "comment": None,
+                    "isPrimaryKey": bool(is_pk),
+                })
+
+            # 获取索引
+            cursor.execute(f"PRAGMA index_list(\"{table_name}\")")
+            index_rows = cursor.fetchall()
+            indexes = []
+            for (seq, idx_name, unique_flag, origin, partial) in index_rows:
+                cursor.execute(f"PRAGMA index_info(\"{idx_name}\")")
+                idx_cols = cursor.fetchall()
+                indexes.append({
+                    "name": idx_name,
+                    "unique": bool(unique_flag),
+                    "columns": [c[2] for c in idx_cols] if idx_cols else [],
+                })
+
+            # 获取行数
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM \"{table_name}\"")
+                row_count = cursor.fetchone()[0]
+            except sqlite3.Error:
+                row_count = 0
+
+            tables.append({
+                "name": table_name,
+                "comment": None,
+                "rowCount": row_count,
+                "columns": columns,
+                "indexes": indexes,
+            })
+
+        cursor.close()
+        return {
+            "dbType": "sqlite",
+            "databases": [{
+                "name": "main",
+                "tables": tables,
+            }],
+        }
+
+
 # ============================================================
 # 主入口
 # ============================================================
@@ -784,6 +913,8 @@ INTROSPECTORS = {
     "oracle": OracleIntrospector,
     "sqlserver": SQLServerIntrospector,
     "mssql": SQLServerIntrospector,
+    "sqlite": SQLiteIntrospector,
+    "sqlite3": SQLiteIntrospector,
 }
 
 
@@ -842,14 +973,16 @@ def main():
         if not connections:
             print("[db-introspect] 未检测到数据库连接信息。")
             print("  提示：检查项目中是否有 .env / application.yml / database.json 等配置文件。")
-            print("  也可以手动指定连接参数：python db-introspect.py --type mysql --host ...")
+            print("  如果是 SQLite，手动指定：python db-introspect.py --type sqlite --db <文件路径>")
+            print("  其他数据库手动指定：python db-introspect.py --type mysql --host ...")
             sys.exit(0)
 
         print(f"[db-introspect] 检测到 {len(connections)} 个可能的数据库连接:")
         for i, c in enumerate(connections):
+            source = c.get('source', c.get('sqlite_file', '?'))
             print(f"  [{i+1}] {c.get('db_type')}://{c.get('user','?')}@"
                   f"{c.get('host','?')}:{c.get('port','?')}/{c.get('database','?')}"
-                  f"  (来源: {c.get('source','?')})")
+                  f"  (来源: {source})")
 
     # 模式 2: 手动指定
     elif args.db_type:
