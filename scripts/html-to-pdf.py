@@ -3,8 +3,10 @@
 html-to-pdf.py — 把文章 HTML 转成 PDF
 
 用法：
-  python scripts/html-to-pdf.py [input.html] [output.pdf]
-  python scripts/html-to-pdf.py                              # article/article.html → article/article.pdf
+  python scripts/html-to-pdf.py [input.html] [output.pdf] [--route ROUTE]
+  python scripts/html-to-pdf.py                              # dist/index.html → dist/index.pdf
+  python scripts/html-to-pdf.py --route print-all            # 打印所有文档到一个 PDF
+  python scripts/html-to-pdf.py --route business-overview    # 只打印某份文档
   python scripts/html-to-pdf.py --help
 
 前提：本机已装 Chromium / Google Chrome / Microsoft Edge 之一（脚本自动探测）。
@@ -14,6 +16,12 @@ html-to-pdf.py — 把文章 HTML 转成 PDF
   1. 在 HTML 的 </head> 前注入 @media print CSS（pdf-print-overrides.css）
   2. 用 headless 浏览器 --print-to-pdf 渲染
   3. 输出标准 A4 PDF
+
+--route 参数：
+  多文档 SPA 用 HashRouter 路由切换，默认只渲染首页。
+  --route print-all      打开 index.html#/print-all，渲染所有文档到一个 PDF
+  --route <doc-name>     打开 index.html#/<doc-name>，只打印指定文档
+  不传 --route            打开 index.html，打印默认路由（导航首页）
 """
 
 import argparse
@@ -26,7 +34,6 @@ import sys
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-import sys
 import tempfile
 from pathlib import Path
 
@@ -77,10 +84,12 @@ def find_browser() -> str | None:
 
 def main():
     parser = argparse.ArgumentParser(description="HTML → PDF（headless 浏览器 + print CSS）")
-    parser.add_argument("input", nargs="?", default="article/article.html",
-                        help="输入 HTML 文件（默认: article/article.html）")
-    parser.add_argument("output", nargs="?", default="article/article.pdf",
-                        help="输出 PDF 文件（默认: article/article.pdf）")
+    parser.add_argument("input", nargs="?", default="dist/index.html",
+                        help="输入 HTML 文件（默认: dist/index.html）")
+    parser.add_argument("output", nargs="?", default="dist/index.pdf",
+                        help="输出 PDF 文件（默认: dist/index.pdf）")
+    parser.add_argument("--route", default=None,
+                        help="HashRouter 路由（如 print-all / business-overview），不传则打印默认路由")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -90,7 +99,7 @@ def main():
 
     if not input_path.exists():
         print(f"✗ 输入文件不存在：{input_path}")
-        print("  先在工作区跑 npm run html 产出 article/article.html。")
+        print("  先在项目根目录跑 npm run build 产出 dist/index.html。")
         sys.exit(1)
 
     if not css_file.exists():
@@ -137,9 +146,19 @@ def main():
     print(f"▸ 浏览器：{browser}")
     print(f"▸ 输入：{input_path}")
     print(f"▸ 输出：{output_path}")
+    if args.route:
+        print(f"▸ 路由：#{args.route if args.route.startswith('/') else '/' + args.route}")
+
+    # 构建 file URL，附加 HashRouter 路由
+    file_url = f"file:///{tmp_html.replace(os.sep, '/')}"
+    if args.route:
+        route = args.route if args.route.startswith("/") else "/" + args.route
+        file_url += f"#{route}"
 
     # 渲染 PDF
     # 先试 --headless=new（新版 Chrome），失败回退 --headless
+    # 多文档路由（print-all）需要更长渲染时间，提高 virtual-time-budget
+    vtime = "15000" if args.route == "print-all" else "5000"
     for headless_flag in ["--headless=new", "--headless"]:
         try:
             result = subprocess.run(
@@ -150,12 +169,12 @@ def main():
                     "--no-sandbox",
                     "--hide-scrollbars",
                     "--no-pdf-header-footer",
-                    "--virtual-time-budget=5000",
+                    f"--virtual-time-budget={vtime}",
                     f"--print-to-pdf={output_path}",
-                    f"file:///{tmp_html.replace(os.sep, '/')}",
+                    file_url,
                 ],
                 capture_output=True,
-                timeout=60,
+                timeout=120,
                 check=False,
             )
             if output_path.exists() and output_path.stat().st_size > 0:

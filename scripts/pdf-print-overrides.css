@@ -189,4 +189,35 @@
     break-after: page;
     page-break-after: always;
   }
+
+  /* ============================================================
+   * D · print-all 多文档分页（/print-all 路由，多份文档连排）
+   * ============================================================ */
+
+  /* D1) 每份文档的 .ra-root 之间分页，最后一份不分（避免末尾空白页）。
+   *     PrintAllPage 用 <PageBreak /> 组件实现分页，这里作为兜底保障。 */
+  .print-all > .ra-root {
+    break-after: page;
+    page-break-after: always;
+  }
+  .print-all > .ra-root:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* D2) 多文档连排时，每份文档的 min-height: 100vh 会导致前面文档后大段空白。
+   *     改为 auto，让内容自然流动。 */
+  .print-all > .ra-root {
+    min-height: auto !important;
+  }
+
+  /* D3) 多文档模式下，每份文档自带 TOC 会重复且冗余。
+   *     只保留第一份文档的 TOC 作为总目录参考，其余隐藏。
+   *     （如果用户想保留每份文档的 TOC，注释掉此规则即可） */
+  .print-all > .ra-root ~ .ra-root .ra-toc {
+    display: none !important;
+  }
+  .print-all > .ra-root ~ .ra-root .ra-article-layout--with-toc {
+    display: block !important;
+  }
 }
