@@ -16,47 +16,137 @@
 
 ## 方案 A · Mermaid.js（首选，表现力最强）
 
-Mermaid 用文本描述画图，在 Raw 块里引入 mermaid CDN + `<div class="mermaid">` 即可。
+Mermaid 用文本描述画图，渲染时需要在项目里安装 mermaid 并 import。
 
-### 完整示例：在 Raw 块里嵌入 Mermaid
+### 安装（离线必需，一次性）
 
-```tsx
-<Raw title="订单生命周期">
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
-  </script>
-  <div className="mermaid">
-    stateDiagram-v2
-    [*] --> pending: 用户提交订单
-    pending --> paid: 支付成功
-    pending --> cancelled: 超时/用户取消
-    paid --> shipped: 仓库发货
-    shipped --> completed: 用户签收
-    paid --> refunding: 用户申请退款
-    refunding --> refunded: 退款到账
-    cancelled --> [*]
-    completed --> [*]
-    refunded --> [*]
-  </div>
-  <div style={{
-    fontSize: 'var(--ra-text-sm)',
-    color: 'var(--ra-color-muted)',
-    marginTop: 'var(--ra-space-2)',
-  }}>▲ 订单状态迁移图。正常路径：待支付→已支付→已发货→已完成。</div>
-</Raw>
+Mermaid 必须 npm 安装到项目里，Vite 才会把它打包进 bundle，离线才能用。**不要用 CDN import**——`vite-plugin-singlefile` 不会内联 CDN 资源，离线打开会渲染失败。
+
+```bash
+# 在 business-docs 目录执行
+npm install mermaid
 ```
 
-### Mermaid 主题匹配
+### 完整示例：在 Raw 块里嵌入 Mermaid（离线可用）
 
-Mermaid 的 `theme` 参数要和文章主题协调：
+在 Section 文件顶部 import mermaid，在 Raw 块里调用渲染：
 
-| 文章主题 | Mermaid theme | 效果 |
+```tsx
+import { Raw } from "reacticle";
+import { MermaidDiagram } from "../components/MermaidDiagram";
+// MermaidDiagram 是 scaffold 预置的复用组件（src/components/MermaidDiagram.tsx），
+// 已封装 mermaid.render 异步渲染逻辑，直接传 graph 字符串即可。
+
+export function Section05StateMachine() {
+  // 图表定义
+  const graph = `
+stateDiagram-v2
+  [*] --> pending: 用户提交订单
+  pending --> paid: 支付成功
+  pending --> cancelled: 超时/用户取消
+  paid --> shipped: 仓库发货
+  shipped --> completed: 用户签收
+  paid --> refunding: 用户申请退款
+  refunding --> refunded: 退款到账
+  cancelled --> [*]
+  completed --> [*]
+  refunded --> [*]
+  `;
+
+  return (
+    <Raw title="订单生命周期">
+      <MermaidDiagram graph={graph} />
+      <div style={{
+        fontSize: "var(--ra-text-sm)",
+        color: "var(--ra-color-muted)",
+        marginTop: "var(--ra-space-2)",
+      }}>▲ 订单状态迁移图。正常路径：待支付→已支付→已发货→已完成。</div>
+    </Raw>
+  );
+}
+```
+
+**关键点**：
+- `import { MermaidDiagram } from "../components/MermaidDiagram"` —— scaffold 已预置复用组件，直接用
+- `mermaid` 包是 scaffold 时 `npm install mermaid` 装好的，Vite 打包，离线可用
+- 用 `mermaid.render(id, graph)` 异步渲染成 SVG，再 `dangerouslySetInnerHTML` 插入
+- **不要**用 `<script type="module">` + CDN import，离线会失败
+- **不要**用 `<div class="mermaid">` + `startOnLoad: true`，React 异步渲染时序不可靠
+
+### Mermaid 主题协调（重要 · 不读会画丑图）
+
+**问题**：Mermaid 默认 neutral 主题用 sans-serif 字体 + 粗方框 + 灰箭头 + 阴影，跟 reacticle
+衬线/克制美学冲突——直接用会显得"流程图软件贴在精装书上"。
+
+**解决**：scaffold 预置了 `src/mermaid-overrides.css`，用 `--ra-*` token 全局覆盖 Mermaid SVG
+内部样式。`MermaidDiagram` 组件的 wrapper div 带 `className="mermaid-wrapper"`，CSS 通过这个
+钩子选中 SVG 内部元素：
+
+| 元素 | 覆盖前（默认） | 覆盖后（跟随主题） |
+|------|--------------|------------------|
+| 节点边框 | 灰色 2px 实线 + 阴影 | `--ra-color-border` 1px，去阴影，圆角 4px |
+| 节点背景 | 白色 | `--ra-color-surface`（透明或主题面板色） |
+| 节点文字 | sans-serif 16px 黑色 | `--ra-font-body` 13px `--ra-color-fg` |
+| 连线 | 灰色 2px | `--ra-color-muted` 1px，basis 曲线（更柔和） |
+| 箭头 | 灰色 | `--ra-color-muted` |
+| 边标签 | 白色背景框 | 透明背景，`--ra-text-xs` `--ra-color-muted` |
+| 状态机节点 | 方形 | 胶囊形（rx=18） |
+| 时序图生命线 | 实线 | 虚线（dasharray 2,3） |
+
+**切换文章主题时图表自动跟随**——tufte 主题下是衬线克制，shannon 暗底下自动反色，press
+主题下温暖协调，不需要手动调任何东西。
+
+### Mermaid theme prop（暗底主题用）
+
+除了 CSS 覆盖，`<MermaidDiagram>` 还支持 `theme` prop 切换 Mermaid 内置主题。**只在暗底
+文章主题下需要**——mermaid 的 `dark` 主题会调整 SVG 内部硬编码颜色（如箭头、终态圆点），
+CSS 覆盖不到的地方由它接管。
+
+| 文章主题（`<ThemeProvider>`） | Mermaid theme prop | 说明 |
 |---------|--------------|------|
-| `tufte` / `press` | `neutral` | 低饱和、线条为主 |
-| `vignelli` | `neutral` | 冷中性 |
-| `shannon` / `fuller` | `dark` | 暗底适配 |
-| `freddie` / `andy` | `base` | 温暖、圆角 |
+| `tufte` / `press` / `vignelli` / `knuth` / `bodoni` / `bayer` / `sottsass` | 不传（默认 `neutral`） | CSS 覆盖足够 |
+| `shannon` / `fuller` | `theme="dark"` | 暗底适配，覆盖 CSS 接管不到的硬编码色 |
+| `freddie` / `andy` | `theme="base"` | 温暖圆角，CSS 覆盖 + base 主题打底 |
+
+**示例：在 `fuller` 主题的 Section 里用 Mermaid**
+
+```tsx
+import { Raw } from "reacticle";
+import { MermaidDiagram } from "../components/MermaidDiagram";
+
+const THEME = "fuller"; // 文章主题
+
+export function Section04Topology() {
+  const graph = `
+flowchart LR
+  订单 --> 支付
+  支付 --> 发货
+  `;
+  return (
+    <Raw title="服务调用拓扑">
+      {/* fuller 是暗底蓝图主题，Mermaid 也要用 dark 才协调 */}
+      <MermaidDiagram graph={graph} theme="dark" />
+    </Raw>
+  );
+}
+```
+
+### 图型选择建议（避免画丑图）
+
+不同 Mermaid 图型的视觉密度不同，跟 reacticle 主题协调度也不同：
+
+| 图型 | 视觉密度 | 与 reacticle 协调度 | 建议 |
+|------|---------|------------------|------|
+| `stateDiagram-v2` | 低（胶囊节点 + 简单箭头） | ⭐⭐⭐⭐⭐ | **首选**，业务文档最常用 |
+| `sequenceDiagram` | 中（参与者框 + 生命线 + 消息） | ⭐⭐⭐⭐ | 时序场景用，生命线已改虚线 |
+| `flowchart TD/LR` | 中高（方框 + 分支菱形 + 标签） | ⭐⭐⭐ | 步骤 ≤ 5 用，复杂流程拆成多张 |
+| `erDiagram` | 高（实体框 + 属性列表 + 关系线） | ⭐⭐ | 实体 > 6 个时考虑用 SVG 手画 |
+| `classDiagram` | 高 | ⭐ | 业务文档不用，太技术化 |
+| `gantt` | 高（条形图密集） | ⭐ | 业务文档不用 |
+
+**核心原则**：能用 `stateDiagram-v2` 就不用 `flowchart`——状态机节点是胶囊形 + 简单箭头，
+视觉上跟 reacticle 衬线主题最协调；flowchart 的方框 + 分支菱形 + 边标签密度高，容易显得
+"图表压过正文"。
 
 ### 流程图语法速查
 
@@ -98,27 +188,23 @@ erDiagram
   ORDER ||--|| PAYMENT : "对应"
 ```
 
-### 离线使用 Mermaid
+### 离线原理（为什么必须 npm 安装）
 
-业务文档交付物是离线 HTML。Mermaid 从 CDN 加载只在开发时有效。离线方案：
+业务文档交付物是离线单文件 HTML（`dist/index.html`）。`vite-plugin-singlefile` 把所有 JS/CSS 内联到这一个文件里。但内联的前提是资源在 Vite 的 bundle 里——
 
-**方案 1**：构建前将 mermaid 打包进 HTML。在 `index.html` 的 `<head>` 中：
+| 方式 | 是否离线可用 | 为什么 |
+|------|------------|--------|
+| `npm install mermaid` + `import` | ✅ 可用 | Vite 打包进 bundle，singlefile 内联 |
+| `<script src="cdn...">` | ❌ 离线失败 | singlefile 不内联外部 URL |
+| `<script type="importmap">` + CDN | ❌ 离线失败 | importmap 指向 CDN，singlefile 不内联 |
 
-```html
-<script type="importmap">
-{ "imports": { "mermaid": "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs" } }
-</script>
-```
-
-`vite-plugin-singlefile` 会自动将 importmap 引用的 CDN 资源内联到输出的单文件 HTML。
-
-**方案 2**：如果 `vite-plugin-singlefile` 不支持 importmap 内联，改用方案 B（纯 SVG）。
+所以**必须 npm 安装**。如果项目没装 mermaid，先 `npm install mermaid` 再用方案 A；不想装就用方案 B（纯 SVG，零依赖）。
 
 ---
 
 ## 方案 B · 内联 SVG 模板（零依赖，100% 离线）
 
-当不需要 Mermaid 的复杂表现力，或者环境不支持 importmap 时，直接用 Raw 块手写 SVG。
+当不需要 Mermaid 的复杂表现力，或者不想为项目装 mermaid 时，直接用 Raw 块手写 SVG。
 
 ### B1 · 水平流程图（3-5 步骤）
 
@@ -336,6 +422,6 @@ Phase 4 渲染时，agent 读取 `derivedStateMachine`，用方案 A（Mermaid s
 
 - **图表是仆人不是主人**：每个图必须配一句 caption 解释"这张图说明了什么"
 - **颜色只用 token**：写死 `#FF0000` 切换主题时图表不变色，等于废了主题系统
-- **离线优先**：构建交付物时确保图表在断网下能看（用方案 B 内联 SVG 或方案 A 的 importmap 内联）
+- **离线优先**：构建交付物时确保图表在断网下能看（方案 A 的 npm mermaid + Vite 打包，或方案 B 的内联 SVG）
 - **不只画图**：图表前后要有正文说明，读者不能只看到一张孤零零的图
 - **ENUM 是自动化的入口**：`analyze-schema.py` 发现 ENUM 后自动推导状态机，不需要 agent 手动分析

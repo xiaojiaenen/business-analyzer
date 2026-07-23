@@ -1,118 +1,72 @@
-# Source → Markdown
+# 从代码到业务知识笔记
 
-无论输入是什么，Phase 1 都先转成统一的 `source/source.md`，并把风险写进
-`source/extraction-notes.md`。
+本 skill 的输入是**代码仓库**（不是 URL/PDF/DOCX），"源材料"就是代码本身。
+本文件说明如何把代码扫描结果整理成 `analysis/business-knowledge.md`——Phase 2 的分析笔记，
+Phase 4 写文档时的事实底座。
 
 ## 产物
 
-`source.md` 要包含：标题 · 来源 · 作者 / 时间 / 链接（若可得）· 正文 · 表格 ·
-图片占位 · 代码块 · 引用 · 附录 / 脚注。
+`business-docs/analysis/business-knowledge.md` 是 agent 的分析记忆文件（非交付物），包含：
 
-`extraction-notes.md` 要记录：输入类型 · 提取方式 · 可能丢失的信息 · PDF/DOCX 中
-无法可靠还原的版式 · 图片 / 表格 / 脚注 / 代码是否完整 · 需要用户补充的素材或上下文 ·
-**源语言、是否需要翻译、目标语言、翻译版文件名与翻译说明**。
+- 项目元信息（名称、技术栈、类型、业务领域）
+- 业务实体清单 + 核心业务概念 + 关系网
+- 端到端主线 + 子流程 + 状态机
+- 业务规则 + 角色 + 领域划分
+- 业务能力三级树 + 入口点全清单
+- 置信度标注（`[代码明确]`/`[注释/文档]`/`[推断]`/`[待确认]`）
 
-## 语言与翻译
+## 写入原则
 
-抽取后判断 `source.md` 的语言，并按 Phase 0 记录的目标语言决定：
+| 原则 | 说明 |
+|------|------|
+| **业务语言** | 写"订单""支付""库存"，不写"OrderService""PaymentController" |
+| **证据留痕** | 每条知识标注来源文件 + 置信度（见 `analysis-methods.md` 置信度标注段） |
+| **结构化** | 用标题/列表/表格组织，不是流水账 |
+| **不编造** | 代码没明确的不猜，标 `[待确认]` 在检查点问用户 |
 
-- 未指定目标语言，或目标语言与源一致 → **不翻译**，最终文章语言 = 源语言。
-- 指定了目标语言且与源不一致 → 产出 `source/source.<lang>.md`（如 `source.zh.md` / `source.en.md`），
-  作为 Phase 2+ 的**事实底座**；原 `source.md` 保留备查。
-  - 翻译要求：**地道、去翻译腔** —— 按目标语言的表达习惯重组句子，不逐字直译，不留生硬外语语序 /
-    被动堆叠 / 异国标点；术语 / 数字 / 代码 / 公式 / 引用保持准确；标题层级、结构、信息保留比例不变。
-  - 翻译只在源文层做一次；后续编辑、改写语气、组件化都基于翻译版进行。
+## 从代码扫描到笔记
 
-## 不同输入的处理原则
+Phase 1 扫描 + Phase 2 深潜的结果，按以下结构写入 `business-knowledge.md`：
 
-| 输入 | 处理方式 | 自检重点 |
-|---|---|---|
-| URL | 抓网页正文，清理导航 / 广告 / 推荐 | 是否抓到主体，链接和图片是否保留 |
-| PDF | 提取文本 / 章节 / 表格 / 图片占位 | 断行错乱、页眉页脚混入、表格丢失 |
-| DOCX | 提取标题层级 / 段落 / 表格 / 图片占位 | 样式不重要，结构和内容完整性重要 |
-| Markdown | 保持原有标题 / 代码块 / 表格 | 不要过度改写源文 |
-| 纯文本 | 识别结构并标注不确定处 | 不要擅自编造层级 |
-| 截图 / 图片 | 转成图片占位 + 说明，记录用途 | 记录到 extraction-notes，等用户确认 |
+```markdown
+# [项目名] · 业务知识笔记
 
-## 抽取脚本选择
+## 项目元信息
+- 名称：xxx
+- 技术栈：xxx
+- 项目类型：Web 应用 / CLI / 微服务 / ...
+- 业务领域：电商 / 供应链 / 金融 / ...
 
-Skill 提供两条抽取路径：MarkItDown 主路径 + 轻量 fallback。Agent 应在 Phase 1 先判断
-输入类型、信息保留要求和本机环境，再选择脚本。
+## 业务实体（来自 2.1）
+### 核心业务概念
+| 概念 | 定义 | 为什么是核心 | 来源 |
+|------|------|-------------|------|
+| 订单 | 用户购买凭证 | 收入载体 | `t_order` 表 [代码明确] |
 
-### 1. MarkItDown 主路径
+### 实体清单
+（完整实体列表）
 
-对 PDF / DOCX / PPTX / HTML / 复杂文档，尤其是用户要求 80-100% 信息保留时，优先使用
-`scripts/source-to-markdown-markitdown.py`：
+## 端到端主线（来自 2.2）
+### 主线 1：订单到现金 (O2C)
+- 状态节点：下单→支付→发货→收货→开票→收款
+- 子流程：...
+- 状态机：...
 
-```bash
-python3.10 scripts/source-to-markdown-markitdown.py <input> -o source/source.md
+## 业务规则（来自 2.3）
+| ID | 触发 | 动作 | 原因 | 来源 |
+|----|------|------|------|------|
+| BR-001 | 金额>5000 | 风控审核 | 风险控制 | `OrderService.validate()` [代码明确] |
+
+## 角色（来自 2.4）
+...
+
+## 业务能力树 + 入口点（来自 2.6）
+...
 ```
 
-MarkItDown 需要 Python 3.10+。它是可选增强依赖，不随组件库或脚手架强制安装。
-若未安装，按需提示用户安装：
+## 不需要的产物（和上游 reacticle skill 的区别）
 
-```bash
-python3.10 -m pip install "markitdown[pdf,docx]"
-```
+本 skill **不产出** `source/source.md`、`source/extraction-notes.md`——那些是上游处理
+URL/PDF/DOCX 输入时用的。本 skill 输入是代码，分析结果直接写 `business-knowledge.md`。
 
-如果本机没有 `python3.10` 命令但有 `uv`，可临时拉起带 MarkItDown 的环境：
-
-```bash
-uv run --python 3.12 --with "markitdown[pdf,docx]" python \
-  scripts/source-to-markdown-markitdown.py <input> -o source/source.md
-```
-
-不要默认安装 `markitdown[all]`，除非用户明确需要 PPTX / XLSX / 音频 / YouTube / Azure 等
-额外格式。全量安装更重，也更容易引入环境问题。
-
-### 2. 轻量 fallback
-
-如果 MarkItDown 不可用、Python 版本不足、转换失败，或输入只是 Markdown / TXT / 简单 HTML，
-使用 `scripts/source-to-markdown.py`：
-
-```bash
-python3 scripts/source-to-markdown.py <input> -o source/source.md
-```
-
-脚本会探测可用的解析库（pdfminer / pdfplumber / python-docx / BeautifulSoup），缺库时
-打印安装建议并优雅降级。脚本只做**机械抽取**；正文清理、占位标注、风险记录仍由 agent 完成。
-URL 也可直接用 agent 的网页抓取能力获取正文，再清理。
-
-### 3. Agent 决策规则
-
-- PDF / DOCX / PPTX / 复杂 HTML：先尝试 MarkItDown。
-- Markdown / TXT：直接用 fallback，保持原文结构，不要过度处理。
-- URL：可先用 Agent 的网页抓取能力获取正文；若已保存为 HTML 文件，再按复杂度选择
-  MarkItDown 或 fallback。
-- 100% 信息保留：抽取后必须更严格自检，必要时同时跑 MarkItDown 与 fallback，对比是否
-  有表格、代码、脚注、图片占位遗漏。
-- 任一脚本产物都只是 `source.md` 草稿；Agent 必须继续清理噪音、补图片占位，并写
-  `source/extraction-notes.md`。
-
-## Source Phase 自检（主 Agent 内联 · 5 条 checklist）
-
-源材料质检**不是硬性 SubAgent 质检点**。主 Agent 进 Phase 2 前反正要通读 `source.md`，
-就地按这 5 条核查、按结论修复即可（无需单独的 review 文件）：
-
-1. **完整性**：是否被截断？体量是否和原文相称（长 PDF / 长文没有只抽到一半 / 只抓到首屏）？
-2. **结构**：标题层级是否保留？还是被压平成一片正文（后面没法分章）？
-3. **关键载体**：表格 / 代码 / 公式 / 引用 / 脚注是否保留且没损坏（表格没挤成一行、代码缩进还在、
-   公式没变乱字符）？
-4. **噪声**：是否误把导航 / 广告 / Cookie 横幅 / 推荐阅读 / 页眉页脚页码写进正文？编码有没有伤
-   （乱码、连字 `ﬁ`、软连字符断词、两栏 PDF 阅读顺序错乱）？
-5. **不确定项**：图片是否以占位标注？拿不准的都写进 `extraction-notes.md` 了吗？
-
-> ⚠️ 上面 1/4 能孤读 markdown 抓到，但 **2/3 里"静默丢失"的表/段**（被悄悄删掉、吞掉）
-> 光看 markdown 看不出来——必须对照 `original.*`。
-
-## 升级为独立 Source Reviewer（仅限复杂/低置信源）
-
-**只有**当 `extraction-notes.md` 标记了"低置信 / 复杂 PDF/DOCX / 转换吃不准 / 要求 100% 保留的关键源"
-时，才升级为独立 SubAgent，并**强制对照原件做 diff 式核查**，写 `review/source-review.md`：
-
-```text
-请作为 Source Reviewer。同时读取 source/original.*（原件）和 source/source.md（转换产物）。
-逐项做 diff 式核查：对照原件，source.md 是否漏掉了表格 / 段落 / 脚注 / 代码 / 图，
-是否混入噪音，是否有结构塌陷或编码损坏。
-只输出"按出现顺序的差异清单 + 必须修复项"，不评价文章好不好看，不要替我改文件。
-```
+Phase 4 写 Section 组件时，直接读 `business-knowledge.md` 对应段落，不需要中间转换层。
