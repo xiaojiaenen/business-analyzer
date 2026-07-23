@@ -1,7 +1,7 @@
 # Raw 政策
 
 Raw 是 Beautiful Article 的关键表现力，但必须受**主题**和**文章性**约束。写 Raw 前先读
-选定主题的 `theme-profiles/<id>.md` 的 Raw 风格。
+选定主题的 `references/themes/<id>.md` 的 Raw 风格。
 
 ## Raw 是完整的 Web 平台，不是"画 SVG"
 

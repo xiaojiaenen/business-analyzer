@@ -120,7 +120,7 @@ Canvas / React 还是别的）由你定。
 
 ## 主题倾向（速查）
 
-读 `theme-profiles/<id>.md` 获得权威风格指南；下面是"封面起手"提示（**视觉手法只是
+读 `references/themes/<id>.md` 获得权威风格指南；下面是"封面起手"提示（**视觉手法只是
 启发，不是规定** —— 你可以用任何技术做出对的气质）：
 
 | 主题 | 封面感觉 | 推荐模板 | 视觉手法举例 |
@@ -157,7 +157,7 @@ Canvas / React 还是别的）由你定。
 写完封面，对照下面 5 项；任何一项 fail → 改完再交付：
 
 1. **图文并茂**：截掉文字层后还剩视觉主体？截掉视觉层后还剩文字？两者都要有。
-2. **主题忠实**：切到 `theme-profiles/index.json` 里另一个主题（改 `main.tsx` 一行），
+2. **主题忠实**：切到 `references/themes/index.json` 里另一个主题（改 `main.tsx` 一行），
    封面**自动跟随**变色 / 变字、不破相？如果有写死值就不算过。
 3. **内容忠实**：盯着封面看 5 秒钟，能不能猜出文章在讲什么？如果只能看到"一个漂亮
    图形"但跟正文关系不大，不算过。
@@ -182,7 +182,7 @@ Canvas / React 还是别的）由你定。
 
 ---
 
-## 何时关闭封面（`--no-cover`）
+## 何时关闭封面
 
 99% 的场景都该开。少数关闭的情况：
 
@@ -191,8 +191,7 @@ Canvas / React 还是别的）由你定。
 - **用户明确要关**：尊重用户。
 
 关闭方法：
-- 脚手架阶段：`bash scripts/scaffold.sh <dir> --theme=<id> --no-cover`。
-- 已脚手架：删 `article/main.tsx` 里 `<Cover />` 引入和渲染，可顺手删 `Cover.tsx`。
+- 在页面组件中直接不渲染 `<Cover />`（不需要封面时，删掉或注释掉 `<Cover />` 行即可）。
 
 ---
 
@@ -200,9 +199,9 @@ Canvas / React 还是别的）由你定。
 
 | 阶段 | 跟封面相关的事 |
 |---|---|
-| Phase 2 Plan | `plan/plan.md` Brief 段里加一行"封面：开/关 + 一句构图想法 + 主题模板（A/B/C/D/E）" |
+| Phase 3 Plan | `plan/plan.md` Brief 段里加一行"封面：开/关 + 一句构图想法 + 主题模板（A/B/C/D/E）" |
 | Phase 3 Checkpoint 1 | 第 5 项独立确认"封面 · 开 / 关"，AI 推荐通常是"开" |
-| Phase 4 First Spread | **替换 `article/Cover.tsx` 里的 `<CoverPlaceholder />`** 为本文专属设计；首屏验收必看封面 |
+| Phase 4 First Spread | **替换 `src/components/Cover.tsx` 里的 `<CoverPlaceholder />`** 为本文专属设计（或传入自定义 children）；首屏验收必看封面 |
 | Phase 4 First Spread Review | Reviewer 用本文档自检 5 条核对 |
-| Phase 6 Final Review | Visual Reviewer 复查封面与主题一致性 |
-| Phase 8 Delivery | PDF 导出时封面自动独占首页（不需要额外操作） |
+| Phase 4 Final Review | Visual Reviewer 复查封面与主题一致性 |
+| Phase 5 Delivery | PDF 导出时封面自动独占首页（不需要额外操作） |

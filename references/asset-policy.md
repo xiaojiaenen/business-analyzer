@@ -63,7 +63,7 @@ refined book-publishing mood, no screens, no logos.
 
 ## 图片自检（每张图）
 
-- 是否服务文章中的具体位置？是否符合选定主题 `theme-profiles/<id>.md` 的媒体风格？
+- 是否服务文章中的具体位置？是否符合选定主题 `references/themes/<id>.md` 的媒体风格？
 - 是否不是纯装饰？是否不会抢正文？是否没有和 Raw 表达重复？
 - 是否有 caption / source / alt 文本？
 

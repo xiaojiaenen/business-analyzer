@@ -26,7 +26,7 @@ import { ThemeProvider, Article, Hero, Lead, Section, Aside, Table, Raw } from "
 6. **版式与主题解耦。** `Article` 的 `width`（`narrow` / `regular` / `wide` / `full`，默认
    `regular`）决定阅读列宽，`toc`（默认在本 Skill 开启）决定是否有左侧目录 —— 都按内容选、
    经 Plan Checkpoint 确认，**不由主题决定**。详见 `references/layout.md`。
-7. **一个 Section = 一个文件。** 每个 Section 必须是独立组件（`article/sections/NN-*.tsx`），
+7. **一个 Section = 一个文件。** 每个 Section 必须是独立组件（`src/sections/<doc-name>/NN-*.tsx`），
    **坚决不允许**把多个 Section 写进一个组件；`Article.tsx` 只做组装（assembler）。这是
    多 Agent 并行开发的前提，详见 `references/section-build.md`。
 
@@ -54,9 +54,9 @@ import { ThemeProvider, Article, Hero, Lead, Section, Aside, Table, Raw } from "
 选组件前先过 litmus test（规则 1）：若正文 / 列表 / 表格 / Raw 读起来更好，就不要为了
 用组件而用组件。领域特例组件每多用一个，都要能回答"这块内容本质上就是它"。
 
-完整组件 API（属性、用法）见组件库本身的 reference：
-`skill/references/{structure,insight,structured,decision,technical}.md`（reacticle-authoring
-skill），按需读取，不要一次全读。
+完整组件 API（属性、用法）见 reacticle 包内的 reference：在项目的 `node_modules/reacticle/`
+里查 `README.md` 或 `docs/`（按需读取，不要一次全读）。本 skill 的 `references/` 不重复
+维护 reacticle 的组件 API，避免与上游版本漂移。
 
 ## 使用原则
 
