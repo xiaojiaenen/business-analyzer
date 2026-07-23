@@ -509,7 +509,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     schema_path = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "./db-analysis"
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else "./analysis/db-schema"
 
     if not os.path.exists(schema_path):
         print(f"Error: schema.json not found at {schema_path}")

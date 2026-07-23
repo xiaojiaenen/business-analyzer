@@ -266,7 +266,7 @@ python scripts/db-introspect.py --type postgres --host HOST -u USER -d DB
 
 **步骤 3**：分析翻译
 ```bash
-python scripts/analyze-schema.py ./db-analysis/schema-mysql.json
+python scripts/analyze-schema.py ./analysis/db-schema/schema-mysql.json
 ```
 生成 `entities.md` + `relationships.md` + `summary.json`。
 

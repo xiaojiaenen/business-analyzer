@@ -369,7 +369,7 @@ python scripts/db-introspect.py --auto-detect <project-dir>
 python scripts/db-introspect.py --type mysql --host HOST -u USER -p PASS -d DB
 
 # 分析 Schema → 业务实体
-python scripts/analyze-schema.py ./db-analysis/schema-mysql.json
+python scripts/analyze-schema.py ./analysis/db-schema/schema-mysql.json
 
 # 导出 PDF（命令行方式）
 python scripts/html-to-pdf.py --route print-all

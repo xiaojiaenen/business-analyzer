@@ -953,8 +953,8 @@ def main():
     parser.add_argument("--sid", help="Oracle SID 或 Service Name")
     parser.add_argument("--service-name", help="Oracle Service Name")
 
-    parser.add_argument("-o", "--output", default="./db-analysis",
-                        help="输出目录（默认: ./db-analysis）")
+    parser.add_argument("-o", "--output", default="./analysis/db-schema",
+                        help="输出目录（默认: ./analysis/db-schema，与 business-knowledge.md 同放 analysis/）")
 
     args = parser.parse_args()
 

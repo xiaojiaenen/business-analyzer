@@ -47,8 +47,8 @@ python scripts/db-introspect.py --type mysql --host 192.168.1.1 -u root -p 12345
 # PostgreSQL
 python scripts/db-introspect.py --type postgres --host localhost -u postgres -d mydb
 
-# 指定输出目录
-python scripts/db-introspect.py --type mysql ... -o ./business-docs/db-analysis/
+# 指定输出目录（默认 ./analysis/db-schema/，与 business-knowledge.md 同放 analysis/）
+python scripts/db-introspect.py --type mysql ... -o ./business-docs/analysis/db-schema/
 ```
 
 **安全保证**：
@@ -61,7 +61,7 @@ python scripts/db-introspect.py --type mysql ... -o ./business-docs/db-analysis/
 ### 步骤 3：分析 Schema → 业务实体
 
 ```bash
-python scripts/analyze-schema.py ./business-docs/db-analysis/schema-mysql.json
+python scripts/analyze-schema.py ./business-docs/analysis/db-schema/schema-mysql.json
 ```
 
 这会生成：
