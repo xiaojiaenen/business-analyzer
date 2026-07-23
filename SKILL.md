@@ -265,6 +265,12 @@ python scripts/db-introspect.py --type postgres --host HOST -u USER -d DB
 
 **安全保证**：仅 SELECT information_schema/pg_catalog。连接失败 → 放弃不影响后续。
 
+> ⚠️ **数据库连不上时的状态机退化标注**（必做）：数据库 ENUM 是状态机最可靠的源（见 `references/end-to-end-mainline.md` 方法 3）。连不上时状态机只能从代码 `setStatus`/`updateStatus`/`if(status==)` 推断，置信度从 `[代码明确]` 降为 `[推断]`。**必须在 `business-knowledge.md` 的状态机段开头加一句标注**：
+> ```
+> > ⚠️ 本项目状态机源于代码推断（数据库未连接），可能不完整。建议连上数据库后用 `analyze-schema.py` 重新提取 ENUM 全集校准。
+> ```
+> 并且 Phase 3 Checkpoint 1 必须**显式问用户**："状态机是从代码推断的，是否有遗漏的状态值？"
+
 **步骤 3**：分析翻译
 ```bash
 python scripts/analyze-schema.py ./analysis/db-schema/schema-mysql.json
@@ -279,7 +285,7 @@ python scripts/analyze-schema.py ./analysis/db-schema/schema-mysql.json
 |------|------|------|
 | 业务实体 | `codegraph_explore` 搜 model/entity 相关源码 或 Grep struct/class/type/CREATE TABLE | 实体清单+属性+生命周期+关系 + **5-10 个核心业务概念 + 概念关系网（Mermaid）+ 枢纽实体** |
 | 业务流程 | **端到端主线识别 → 子流程拆解 → 状态机提取 → 异常分支显式化**（四步递进，见 `references/analysis-methods.md` §2.2） | 1-3 条端到端主线（每条有业务名字）+ 每主线 3-7 子流程（含四要素）+ 核心实体状态机 + 每子流程 3-5 异常分支 + **跨业务域协作时序图** |
-| 业务规则 | Grep validate/check/rule/policy/constraint/limit | 规则清单（触发条件+动作+原因） |
+| 业务规则 | **多路 Grep**（见 `references/analysis-methods.md` §2.3 全关键词清单）：<br>① 后端校验 `validate/check/rule/policy/constraint/limit`<br>② 前端校验 `yup/zod/ajv/schema/required/min/max/pattern`<br>③ 数据库约束 `CHECK/UNIQUE/NOT NULL/FOREIGN KEY`（`analyze-schema.py` 抽取）<br>④ 业务常量 `MAX_/MIN_/LIMIT_/TIMEOUT_/DAYS`<br>⑤ AOP/拦截器 `@PreAuthorize/@Roles/@Valid/@Interceptor` | 规则清单（触发条件+动作+原因+来源类型） |
 | 用户角色 | Grep role/permission/auth/middleware | 角色画像+权限矩阵 |
 | 领域划分 | 归纳为 2-5 个 bounded context | 按业务能力切割 |
 | **业务能力分层 + 入口点枚举** | 业务域→能力→操作 三级分层 + 全量入口扫描（API/CLI/MQ/定时/Webhook/后台） | 业务能力三级树 + 入口点全清单 + 两者对照无遗漏 |
@@ -289,7 +295,7 @@ python scripts/analyze-schema.py ./analysis/db-schema/schema-mysql.json
 | 维度 | 方法 | 产出 |
 |------|------|------|
 | 同步调用链 | 搜 HTTP client / gRPC stub 的引用 | 服务调用拓扑图（谁调谁、什么协议） |
-| 异步流程（MQ） | 枚举所有 topic → producer/consumer 矩阵 | 跨服务异步链路（每个 topic = 一条协作） |
+| 异步流程（MQ） | 枚举所有 topic → producer/consumer 矩阵 + **对称性校验**（见 `references/microservices-guide.md` §2.3 步骤 2.5） | 跨服务异步链路（每个 topic = 一条协作）+ 对称性校验记录（孤悬 topic 标 `[待确认]`） |
 | 定时任务 & Webhook | Grep `@Scheduled`/`cron`/`webhook`/`callback` | 非用户触发的流程清单 |
 | 流程合并去重 | 网关 API + MQ 链路 + 定时 + Webhook 汇总 | **全局业务流程清单**（去重、命名、关联） |
 
@@ -305,10 +311,10 @@ python scripts/analyze-schema.py ./analysis/db-schema/schema-mysql.json
 - [ ] **端到端主线** 1-3 条（每条有业务名字，如"订单到现金 O2C"，不是"流程1"）
 - [ ] 每条主线拆解 3-7 个子流程，每个子流程含四要素（触发条件 + 正常流程 + 状态变化 + 衔接点）
 - [ ] **核心实体状态机**已提取（ENUM/常量→状态值 + setStatus/updateStatus→迁移表 + Mermaid `stateDiagram-v2` 图）
-- [ ] 每个子流程配套 3-5 条异常分支（触发条件 + 系统响应 + 用户感知 + 是否可恢复）
+- [ ] 每个子流程配套 3-5 条异常分支（触发条件 + 系统响应 + 用户感知 + 是否可恢复）+ **4 路覆盖率校验**（catch/rollback/compensate/throw 逐个对应，无遗漏，校验记录写入 `business-knowledge.md`）
 - [ ] 多主线之间有**跨业务域协作时序图**（Mermaid `sequenceDiagram`，不是一张关系表了事）+ 跨域枢纽动作
 - [ ] **业务能力三级分层**（业务域→能力→操作）+ **入口点全枚举**（API/CLI/MQ/定时/Webhook/后台），两者对照无遗漏
-- [ ] 至少 5 条业务规则有触发条件 + 执行动作 + 业务原因
+- [ ] 至少 5 条业务规则有触发条件 + 执行动作 + 业务原因 + **来源类型**（后端校验/前端校验/数据库约束/业务常量/AOP拦截器），且**至少覆盖 3 种来源类型**（不能只从后端校验提取）
 - [ ] 角色矩阵覆盖所有识别到的用户类型
 - [ ] 子领域 ≤ 5 个（超过说明切得太细，归并回去）
 - [ ] 业务知识标注了置信度（`[代码明确]`/`[注释/文档]`/`[推断]`/`[待确认]`）
@@ -372,13 +378,41 @@ python scripts/analyze-schema.py ./analysis/db-schema/schema-mysql.json
 
 **主题不变时统一**：如果所有文档用同一个主题（如全部 `press`），只需在检查点 1 确认一次。如果不同文档想不同主题（全景图用 `freddie` 更轻松、规则用 `tufte` 更严谨），逐份指定。
 
-> 🛑 **检查点 1**：列出文档清单+概要，**每份文档注明推荐主题并给用户选择机会**。确认后继续。
+**业务能力 → 文档章节映射校验**（防能力树识别了 12 个能力但文档只挑了 5 个展开，剩下 7 个漏讲）：
+
+Phase 2 产出的业务能力树（域→能力→操作）必须在 Phase 3 全部对应到某份文档的某个章节，不能"识别了但没讲"。在 `plan/plan.md` 里画一张映射表：
+
+```markdown
+## 业务能力 → 文档章节映射
+
+| 业务域 | 业务能力 | 文档 | 章节 | 说明 |
+|--------|---------|------|------|------|
+| 交易 | 创建订单 | 核心业务流程 | 3.1 订单生命周期 | 重点展开 |
+| 交易 | 取消订单 | 核心业务流程 | 3.2 异常分支 | 简述 |
+| 交易 | 订单查询 | 业务全景图 | 2.1 用户入口 | 一句话带过 |
+| 库存 | 库存锁定 | 核心业务流程 | 3.1 订单生命周期 | 作为订单子流程提及 |
+| 库存 | 库存盘点 | 系统架构 | 5.2 定时任务 | 简述 |
+| 风控 | 大额审核 | 业务规则手册 | 4.2 交易规则 | 重点展开 |
+| ... | ... | ... | ... | ... |
+```
+
+**校验规则**：
+- 每个业务能力必须对应到某份文档的某个章节（不能空着）
+- 每个业务操作至少在某份文档被提及（即使一句话带过也要写明）
+- **未映射的能力** = 遗漏，必须补到某份文档（或新建文档）
+- 在映射表末尾加一行校验记录：
+  ```
+  > 映射校验：识别 12 个业务能力 / 38 个业务操作 → 全部映射到 7 份文档的 23 个章节，无遗漏。
+  ```
+
+> 🛑 **检查点 1**：列出文档清单+概要 + **业务能力→文档章节映射表**，**每份文档注明推荐主题并给用户选择机会**。确认后继续。
 
 #### ✅ Phase 3 完成标准
 
 - [ ] `business-docs/analysis/business-knowledge.md` 已落盘
 - [ ] 文档清单至少包含业务全景图 + 词汇表（#1 + #6）
 - [ ] 每份文档有 2-3 句概要 + 选定了主题
+- [ ] **业务能力→文档章节映射表已画**（每个能力都对应到某份文档章节，无遗漏，校验记录已写入 `plan/plan.md`）
 - [ ] 用户确认了文档清单和优先级
 - [ ] 如果用户想预览分析笔记，可选：将 `business-knowledge.md` 也渲染为一个文档页面（用 `press` 主题，走 Phase 4 流程）
 

@@ -166,6 +166,60 @@ grep -rE "(@KafkaListener|@RabbitListener|subscribe|consume|onMessage)" --includ
 | shipment.delivered | shipping-service | settlement-service | 签收→触发结算 |
 ```
 
+#### 步骤 2.5：对称性校验（强制，防孤悬 topic 和未消费事件）
+
+**只枚举不校验 = 可能漏掉集成缺失**。矩阵画完后，必须做以下 3 项对称性校验：
+
+**校验 A · 每个 topic 必须有 producer 和 consumer**（防孤悬 topic）
+
+| 异常 | 含义 | 处理 |
+|------|------|------|
+| 有 producer 无 consumer | 事件发了没人收（集成缺失 / 服务下线 / 漏配 consumer） | 标 `[待确认]`，Checkpoint 1 问用户 |
+| 有 consumer 无 producer | 监听了没人发的事件（废弃 consumer / topic 改名 / 漏配 producer） | 标 `[待确认]`，Checkpoint 1 问用户 |
+
+**校验 B · 每个服务的对外事件应被至少一个服务消费**
+
+```bash
+# 对每个服务，列出它 publish 的所有 topic，检查每个 topic 在矩阵中是否有 consumer
+for service in $(services); do
+  echo "## $service 发布的事件"
+  grep "$service.*pub" service-inventory.md | while read topic; do
+    consumer_count=$(grep "$topic.*sub" service-inventory.md | wc -l)
+    [ $consumer_count -eq 0 ] && echo "  ⚠️ $topic 无 consumer"
+  done
+done
+```
+
+**校验 C · 每个服务的订阅事件应有对应 producer**
+
+```bash
+# 对每个服务，列出它 subscribe 的所有 topic，检查每个 topic 在矩阵中是否有 producer
+for service in $(services); do
+  echo "## $service 订阅的事件"
+  grep "$service.*sub" service-inventory.md | while read topic; do
+    producer_count=$(grep "$topic.*pub" service-inventory.md | wc -l)
+    [ $producer_count -eq 0 ] && echo "  ⚠️ $topic 无 producer"
+  done
+done
+```
+
+**产出**：在 `business-knowledge.md` 的服务清单后加一段对称性校验记录：
+
+```markdown
+### MQ Topic 对称性校验
+
+| Topic | Producer | Consumer | 对称性 |
+|-------|---------|----------|--------|
+| order.created | order-service | inventory-service, notification-service | ✅ 有产有消 |
+| payment.completed | payment-service | order-service, shipping-service | ✅ 有产有消 |
+| order.cancelled | order-service | （无 consumer） | ⚠️ [待确认] 孤悬事件，是否服务下线？ |
+| inventory.adjusted | （无 producer） | report-service | ⚠️ [待确认] 废弃订阅？topic 改名？ |
+
+**校验结论**：4 个 topic，2 个对称，2 个不对称（已标 `[待确认]`，Checkpoint 1 向用户确认）。
+```
+
+不对称的 topic **必须在 Checkpoint 1 显式问用户**，不静默忽略。
+
 #### 步骤 3：合并为完整业务链路
 
 从一个触发入口出发，串联所有 topic 的 producer/consumer，得到端到端链路：
