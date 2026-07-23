@@ -1,0 +1,136 @@
+/*
+ * 打印覆盖样式（@media print，只在打印/PDF 时生效，不影响屏幕显示）。
+ *
+ * 两种导出 PDF 的方式都用到这份 CSS：
+ *   1. 页面点击"导出 PDF"按钮 → 跳转 /print-all → 浏览器打印对话框 → 另存为 PDF
+ *   2. 命令行 python scripts/html-to-pdf.py → 脚本会额外注入一份（同内容）再渲染
+ *
+ * 规则分组：
+ *   0) 主题底色 — 保留文章主题背景/文字色到 PDF
+ *   A) TOC 排版 — 强制 TOC 塌到正文上方，正文从新页开始
+ *   B) 分页行为 — 撤销 reacticle 的 break-inside: avoid-page（长 Section 会留大空白）
+ *   C) 封面 — 3:4 封面独占 PDF 首页
+ *   D) 多文档分页 — /print-all 路由每份文档间分页
+ *
+ * 详见 references/pdf-output.md。
+ */
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  /* 0 · 主题底色 */
+  .ra-root {
+    background: var(--ra-color-bg, #ffffff) !important;
+    color: var(--ra-color-text, #111111) !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    position: relative;
+    z-index: 0;
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 0.45in !important;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .ra-root::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--ra-color-bg, #ffffff);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* A · TOC 排版（TOC 在上、正文在下） */
+  .ra-article-layout--with-toc {
+    display: block !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .ra-toc {
+    position: static !important;
+    margin-bottom: 1.5rem !important;
+    page-break-after: always;
+    break-after: page;
+  }
+  .ra-toc__list {
+    column-count: 2;
+    column-gap: 1.5rem;
+    column-fill: balance;
+  }
+  .ra-toc__item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .ra-article-layout--with-toc > .ra-article {
+    break-before: auto;
+  }
+  .ra-toc a,
+  .ra-article a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* B · 分页行为 */
+  .ra-section,
+  .ra-subsection,
+  .ra-section__body,
+  .ra-subsection__body {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  .ra-section__head,
+  .ra-subsection__head,
+  .ra-hero__title,
+  .ra-hero__subtitle,
+  h1, h2, h3, h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .ra-hero, .ra-lead, .ra-conclusion {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  p, li, blockquote, .ra-aside, .ra-quote {
+    orphans: 3;
+    widows: 3;
+  }
+  figure, .ra-table, .ra-codeblock, .ra-formula, .ra-image, .ra-raw {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* C · 封面 */
+  .ra-cover {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  /* D · print-all 多文档分页 */
+  .print-all > .ra-root {
+    break-after: page;
+    page-break-after: always;
+    min-height: auto !important;
+  }
+  .print-all > .ra-root:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  .print-all > .ra-root ~ .ra-root .ra-toc {
+    display: none !important;
+  }
+  .print-all > .ra-root ~ .ra-root .ra-article-layout--with-toc {
+    display: block !important;
+  }
+
+  /* E · 打印时隐藏导航元素 */
+  .no-print {
+    display: none !important;
+  }
+}

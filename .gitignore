@@ -3,3 +3,7 @@ __pycache__/
 node_modules/
 dist/
 .DS_Store
+
+# 验证 / 测试产物
+business-docs-test/
+.playwright-mcp/

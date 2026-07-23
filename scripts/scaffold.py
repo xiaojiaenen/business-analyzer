@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-scaffold.py — 创建文章工作区（Vite + React + TypeScript + reacticle）
+scaffold.py — 创建文档项目工作区（单项目 SPA：Vite + React + TypeScript + reacticle + react-router）
 
 用法：
-  python scripts/scaffold.py <target-dir> [--theme=<id>] [--no-cover]
+  python scripts/scaffold.py <target-dir>
   python scripts/scaffold.py --list-themes
 
 示例：
-  python scripts/scaffold.py ./my-article --theme=tufte
-  python scripts/scaffold.py ./brief --theme=press --no-cover
+  python scripts/scaffold.py ./business-docs
 
-工作区从 npm 安装最新发布版 reacticle。
+所有文档页面共享一个项目，通过 HashRouter 路由切换。
+每个页面自行声明主题（ThemeProvider），不再需要每份文档单独 scaffold。
 """
 
 import argparse
 import json
 import os
-import re
 import shutil
 import sys
 
@@ -25,7 +24,6 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import subprocess
-import sys
 from pathlib import Path
 
 
@@ -48,68 +46,28 @@ def list_themes(profiles_path: Path):
         print(f"  • {t['id']}")
         print(f"      {t['label']}")
         print(f"      {t['mood']}")
-    print(f"\n用 --theme=<id> 选定一个。默认：tufte。")
-
-
-def theme_exists(profiles_path: Path, theme_id: str) -> bool:
-    """校验主题是否存在"""
-    if not profiles_path.exists():
-        return False
-    with open(profiles_path, "r", encoding="utf-8") as f:
-        themes = json.load(f)
-    return any(t["id"] == theme_id for t in themes)
+    print(f"\n主题在各页面组件内通过 <ThemeProvider theme=\"...\"> 声明，不同页面可用不同主题。")
 
 
 def check_npm() -> bool:
     """检查 npm 是否可用"""
+    npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
     try:
-        subprocess.run(["npm", "--version"], capture_output=True, check=True)
+        subprocess.run([npm_cmd, "--version"], capture_output=True, check=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
-
-
-def process_cover_in_main_tsx(main_tsx_path: Path, cover_enabled: bool):
-    """处理 main.tsx 中的封面标记"""
-    content = main_tsx_path.read_text(encoding="utf-8")
-
-    if cover_enabled:
-        # 删除标记行，保留中间的 import 和 <Cover/>
-        lines = content.split("\n")
-        filtered = [
-            line for line in lines
-            if "__COVER_IMPORT_BEGIN__" not in line
-            and "__COVER_IMPORT_END__" not in line
-            and "__COVER_RENDER_BEGIN__" not in line
-            and "__COVER_RENDER_END__" not in line
-        ]
-        content = "\n".join(filtered)
-    else:
-        # 删除 BEGIN..END 之间的整段（含标记行）
-        content = re.sub(
-            r'[^\n]*__COVER_IMPORT_BEGIN__.*?__COVER_IMPORT_END__[^\n]*\n',
-            '', content, flags=re.DOTALL
-        )
-        content = re.sub(
-            r'[^\n]*__COVER_RENDER_BEGIN__.*?__COVER_RENDER_END__[^\n]*\n',
-            '', content, flags=re.DOTALL
-        )
-
-    main_tsx_path.write_text(content, encoding="utf-8")
 
 
 def main():
     skill_dir = get_skill_dir()
     template_dir = skill_dir / "assets" / "scaffold-template"
     profiles_path = skill_dir / "references" / "themes" / "index.json"
-    default_theme = "tufte"
 
     parser = argparse.ArgumentParser(
-        description="创建文章工作区（Vite + React + TypeScript + reacticle）"
+        description="创建文档项目工作区（单项目 SPA：Vite + React + TypeScript + reacticle + react-router）"
     )
     parser.add_argument("target", nargs="?", help="目标目录")
-    parser.add_argument("--theme", default=default_theme, help=f"主题 ID（默认: {default_theme}）")
-    parser.add_argument("--no-cover", action="store_true", help="禁用封面")
     parser.add_argument("--list-themes", action="store_true", help="列出可用主题")
 
     args = parser.parse_args()
@@ -120,18 +78,10 @@ def main():
 
     if not args.target:
         parser.print_help()
-        print("\n请指定目标目录，例如: python scripts/scaffold.py ./my-article --theme=press")
+        print("\n请指定目标目录，例如: python scripts/scaffold.py ./business-docs")
         sys.exit(1)
 
-    theme = args.theme
-    cover = not args.no_cover
     target = Path(args.target).resolve()
-
-    # 校验主题
-    if not theme_exists(profiles_path, theme):
-        print(f"✗ 未知主题 '{theme}'。可用主题：\n")
-        list_themes(profiles_path)
-        sys.exit(1)
 
     # 检查目标目录
     if target.exists() and any(target.iterdir()):
@@ -147,65 +97,68 @@ def main():
         print(f"✗ 模板目录不存在: {template_dir}")
         sys.exit(1)
 
-    print(f"▸ 在 {target} 创建工作区")
-    print(f"▸ 主题：{theme}")
-    print(f"▸ 封面：{'开（屏幕 3:4 / PDF 独占首页）' if cover else '关'}")
+    print(f"▸ 在 {target} 创建文档项目")
+    print(f"▸ 架构：单项目 SPA（HashRouter，所有文档共享一个项目）")
+    print(f"▸ 主题：每页独立声明（IndexPage=press, SampleDoc=tufte）")
     print(f"▸ reacticle：从 npm 安装最新发布版")
 
-    # 创建目录结构
-    target.mkdir(parents=True, exist_ok=True)
-    (target / "source").mkdir(exist_ok=True)
-    (target / "plan").mkdir(exist_ok=True)
-    (target / "review").mkdir(exist_ok=True)
-    (target / "article" / "sections").mkdir(parents=True, exist_ok=True)
-    (target / "article" / "raw-blocks").mkdir(parents=True, exist_ok=True)
-    (target / "article" / "assets").mkdir(parents=True, exist_ok=True)
+    # ── 创建目录结构 ──
+    dirs = [
+        "src/components",
+        "src/pages",
+        "src/sections/sample",
+        "plan",
+        "review",
+        "analysis",
+    ]
+    for d in dirs:
+        (target / d).mkdir(parents=True, exist_ok=True)
 
-    # 复制工程模板文件
-    for filename in ["package.json", "vite.config.ts", "tsconfig.json",
-                     "tsconfig.node.json", "index.html"]:
+    # ── 复制工程模板文件 ──
+    root_files = [
+        "package.json", "vite.config.ts", "tsconfig.json",
+        "tsconfig.node.json", "index.html", ".npmrc",
+        "src/print-overrides.css",
+        "src/mermaid-overrides.css",
+    ]
+    for filename in root_files:
         src = template_dir / filename
         if src.exists():
-            shutil.copy2(src, target / filename)
+            dst = target / filename
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
 
-    # 复制 article 文件
-    article_template = template_dir / "article"
-    shutil.copy2(article_template / "main.tsx", target / "article" / "main.tsx")
-    shutil.copy2(article_template / "Article.tsx", target / "article" / "Article.tsx")
-    shutil.copy2(
-        article_template / "sections" / "01-opening.tsx",
-        target / "article" / "sections" / "01-opening.tsx"
-    )
-
-    # 封面
-    if cover:
-        shutil.copy2(article_template / "Cover.tsx", target / "article" / "Cover.tsx")
+    # ── 复制 src/ 文件 ──
+    src_files = [
+        "src/main.tsx",
+        "src/App.tsx",
+        "src/components/Cover.tsx",
+        "src/components/Colophon.tsx",
+        "src/components/BackLink.tsx",
+        "src/components/MermaidDiagram.tsx",
+        "src/pages/IndexPage.tsx",
+        "src/pages/SampleDoc.tsx",
+        "src/pages/PrintAllPage.tsx",
+        "src/sections/sample/01-opening.tsx",
+    ]
+    for filepath in src_files:
+        src = template_dir / filepath
+        if src.exists():
+            dst = target / filepath
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
 
     # gitkeep
-    (target / "article" / "raw-blocks" / ".gitkeep").touch()
-    (target / "article" / "assets" / ".gitkeep").touch()
+    (target / "plan" / ".gitkeep").touch()
+    (target / "review" / ".gitkeep").touch()
+    (target / "analysis" / ".gitkeep").touch()
 
-    # 注入主题 id
-    main_tsx = target / "article" / "main.tsx"
-    article_tsx = target / "article" / "Article.tsx"
-
-    for fpath in [main_tsx, article_tsx]:
-        content = fpath.read_text(encoding="utf-8")
-        content = content.replace("__THEME__", theme)
-        fpath.write_text(content, encoding="utf-8")
-
-    # 处理封面标记
-    process_cover_in_main_tsx(main_tsx, cover)
-
-    # 记录主题
-    (target / ".theme").write_text(theme, encoding="utf-8")
-
-    # 安装依赖
+    # ── 安装依赖 ──
     os.chdir(target)
     print("▸ 安装依赖（含 reacticle 最新版，可能要等一会）...")
 
-    # 支持 NPM_REGISTRY 环境变量（国内镜像）
-    npm_base = ["npm"]
+    npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
+    npm_base = [npm_cmd]
     registry = os.environ.get("NPM_REGISTRY", "")
     if registry:
         print(f"▸ 使用 registry: {registry}")
@@ -213,6 +166,7 @@ def main():
 
     subprocess.run([*npm_base, "install"], capture_output=True, check=False)
     subprocess.run([*npm_base, "install", "reacticle@latest"], capture_output=True, check=False)
+    subprocess.run([*npm_base, "install", "mermaid"], capture_output=True, check=False)
 
     # 获取版本
     try:
@@ -230,35 +184,48 @@ def main():
     # typecheck
     print("▸ 跑一次 typecheck 确认接线 OK ...")
     try:
-        subprocess.run(["npx", "tsc", "--noEmit"], check=True)
+        npx_cmd = "npx.cmd" if sys.platform == "win32" else "npx"
+        subprocess.run([npx_cmd, "tsc", "--noEmit"], check=True)
         print("✓ typecheck 通过")
     except subprocess.CalledProcessError:
         print("⚠ typecheck 有问题（见上），dev / build 仍可能正常 —— 请人工确认。")
 
-    cover_hint = (
-        "封面：替换 article/Cover.tsx 里的 <CoverPlaceholder />，按文章+主题做定制。"
-        if cover
-        else "封面：已关闭。如需打开，重新跑 scaffold 时去掉 --no-cover。"
-    )
-
     print(f"""
-✓ 完成。工作区：{target}（主题 {theme}）
+✓ 完成。文档项目：{target}
+
+项目结构：
+  {target}/
+  ├── src/
+  │   ├── main.tsx              # 入口（HashRouter + file:// 锚点修复 + import print/mermaid-overrides.css）
+  │   ├── App.tsx               # 路由定义（含 /print-all 打印路由）
+  │   ├── print-overrides.css   # 打印 CSS（PDF 导出用，已内联）
+  │   ├── mermaid-overrides.css # Mermaid 图表样式覆盖（用 --ra-* token 让图表跟随文章主题）
+  │   ├── components/           # 共享组件（Cover, Colophon, BackLink, MermaidDiagram）
+  │   ├── pages/
+  │   │   ├── IndexPage.tsx     # 导航首页（导出 PDF 按钮 + 搜索 + 按域分组）
+  │   │   ├── SampleDoc.tsx     # 示例文档
+  │   │   └── PrintAllPage.tsx  # 打印专用页（所有文档连排，PDF 导出用）
+  │   └── sections/             # Section 组件（按文档分组）
+  │       └── sample/
+  │           └── 01-opening.tsx
+  ├── plan/ review/ analysis/   # 工作记忆（analysis/business-knowledge.md 是事实底座）
+  └── package.json
 
 下一步：
   1. cd {target}
-  2. npm run dev      # 预览（先写首屏 + 第一个 Section）
-  3. 首屏（Hero/Lead）写进 article/Article.tsx（assembler）；
-     第一个 Section 写进 article/sections/01-opening.tsx
-     —— 铁律：一个 Section 一个文件。
-  4. {cover_hint}
-  5. 把决策落盘到 source/ plan/ review/（长期记忆）
+  2. npm run dev      # 预览（默认在 localhost:5173）
+  3. 添加新文档：
+     a. 在 src/pages/ 创建新页面组件（复制 SampleDoc.tsx 模式）
+     b. 在 src/sections/<doc-name>/ 创建 Section 组件
+     c. 在 src/App.tsx 添加 <Route>
+     d. 在 src/pages/IndexPage.tsx 的 DOCS 数组添加一条（含 domain/related 字段）
+     e. 在 src/pages/PrintAllPage.tsx import 新页面组件并排列（PDF 导出需要）
+  4. 每个页面通过 <ThemeProvider theme="..."> 声明自己的主题
 
 构建交付：
-  • npm run build     # 类型检查 + 单页 HTML → dist/index.html
-  • npm run html      # 复用 build，复制为交付物 article/article.html
-
-切主题：改 article/main.tsx 的 <ThemeProvider theme="..."> 一个字即可。
-升级组件库：npm install reacticle@latest
+  • npm run build     # 类型检查 + 单页 HTML → dist/index.html（所有文档在一个文件里）
+  • 交付物：dist/index.html（离线可打开、可分享）
+  • 导出 PDF：首页点「导出 PDF」按钮，或 python scripts/html-to-pdf.py --route print-all
 """)
 
 

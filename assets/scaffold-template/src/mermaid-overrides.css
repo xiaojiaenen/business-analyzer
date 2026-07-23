@@ -1,0 +1,284 @@
+/*
+ * mermaid-overrides.css —— 让 Mermaid 图表跟随 reacticle 主题 token
+ *
+ * Mermaid 默认 neutral 主题用 sans-serif + 粗方框 + 灰箭头，跟 reacticle
+ * 衬线/克制美学冲突。本文件用 --ra-* CSS 变量覆盖 Mermaid SVG 内部样式，
+ * 让图表自动跟随当前文章主题（tufte/press/shannon/...）。
+ *
+ * 原理：Mermaid 11 渲染出的 SVG 内部用 inline style 设 fill/stroke，
+ * 优先级高于普通 CSS。因此本文件所有 fill/stroke 都用 !important 覆盖。
+ * foreignObject 内的 HTML 文字可继承外部 CSS（font-family/color 等），
+ * 不需要 !important。
+ *
+ * 节点 fill 用 transparent（不用 --ra-color-surface）——某些主题的
+ * surface 是深色面板色，做节点填充会让文字看不见。透明背景 + 细边框
+ * 是最克制的方案，跟 reacticle 衬线主题最协调。
+ */
+
+/* ===== 1. SVG 容器：居中、自适应、去背景 ===== */
+.mermaid-wrapper > svg,
+.mermaid-wrapper svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  background: transparent !important;
+}
+
+/* ===== 2. flowchart 节点：细线条、透明背景、去阴影 ===== */
+.mermaid-wrapper .node rect,
+.mermaid-wrapper .node circle,
+.mermaid-wrapper .node ellipse,
+.mermaid-wrapper .node polygon,
+.mermaid-wrapper .node path {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #999) !important;
+  stroke-width: 1px !important;
+  filter: none !important;
+  rx: 4;
+}
+
+/* 节点文字：跟随正文字体、更小字号 */
+.mermaid-wrapper .node .label,
+.mermaid-wrapper .nodeLabel,
+.mermaid-wrapper .nodeLabel foreignObject div,
+.mermaid-wrapper .nodeLabel foreignObject p {
+  font-family: var(--ra-font-body, var(--ra-font-serif, inherit));
+  font-size: var(--ra-text-sm, 13px);
+  color: var(--ra-color-fg, inherit);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* ===== 3. 连线与箭头：更细、用 muted 色 ===== */
+.mermaid-wrapper .edgePath .path,
+.mermaid-wrapper .flowchart-link,
+.mermaid-wrapper .edgePaths .edgePath,
+.mermaid-wrapper svg .edgePath path {
+  stroke: var(--ra-color-muted, #666) !important;
+  stroke-width: 1px !important;
+  fill: none !important;
+}
+
+.mermaid-wrapper .arrowheadPath,
+.mermaid-wrapper .marker,
+.mermaid-wrapper .marker.cross,
+.mermaid-wrapper .marker.point,
+.mermaid-wrapper svg defs marker path {
+  fill: var(--ra-color-muted, #666) !important;
+  stroke: var(--ra-color-muted, #666) !important;
+}
+
+/* ===== 4. 边标签：透明背景、更小字号 ===== */
+.mermaid-wrapper .edgeLabel,
+.mermaid-wrapper .edgeLabel rect {
+  background-color: transparent !important;
+  fill: transparent !important;
+}
+
+.mermaid-wrapper .edgeLabel foreignObject div,
+.mermaid-wrapper .edgeLabel foreignObject p,
+.mermaid-wrapper .edgeLabel span {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-xs, 11px);
+  color: var(--ra-color-muted, #666);
+  background: transparent;
+}
+
+/* ===== 5. 子图（subgraph）：虚线边框、透明背景 ===== */
+.mermaid-wrapper .cluster rect {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #ccc) !important;
+  stroke-width: 1px !important;
+  stroke-dasharray: 3, 3;
+  rx: 6;
+}
+
+.mermaid-wrapper .cluster .cluster-label,
+.mermaid-wrapper .cluster foreignObject div {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-xs, 11px);
+  color: var(--ra-color-muted, #666);
+  font-weight: 500;
+}
+
+/* ===== 6. 状态图（stateDiagram-v2）：状态节点 ===== */
+.mermaid-wrapper .statediagram-state rect,
+.mermaid-wrapper .statediagram-state polygon,
+.mermaid-wrapper .statediagram-state circle,
+.mermaid-wrapper .statediagram .state rect,
+.mermaid-wrapper .statediagram .state circle {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #999) !important;
+  stroke-width: 1px !important;
+  rx: 18;
+}
+
+.mermaid-wrapper .statediagram-state .label,
+.mermaid-wrapper .statediagram-state foreignObject div,
+.mermaid-wrapper .statediagram .state .label,
+.mermaid-wrapper .statediagram .state foreignObject div {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-sm, 13px);
+  color: var(--ra-color-fg, inherit);
+}
+
+.mermaid-wrapper .statediagram .transition,
+.mermaid-wrapper .statediagram .edgeLabel {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-xs, 11px);
+  color: var(--ra-color-muted, #666);
+}
+
+.mermaid-wrapper .statediagram .edgePath .path,
+.mermaid-wrapper .statediagram .edgePath path {
+  stroke: var(--ra-color-muted, #666) !important;
+  stroke-width: 1px !important;
+  fill: none !important;
+}
+
+/* 终态圆圈（[*]） */
+.mermaid-wrapper .statediagram .end-state,
+.mermaid-wrapper .statediagram .start-state,
+.mermaid-wrapper .statediagram circle.statediagram-state {
+  fill: var(--ra-color-muted, #666) !important;
+  stroke: var(--ra-color-muted, #666) !important;
+}
+
+/* ===== 7. 时序图（sequenceDiagram）：参与者与消息 ===== */
+.mermaid-wrapper .actor,
+.mermaid-wrapper .actor rect {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #999) !important;
+  stroke-width: 1px !important;
+  rx: 4;
+}
+
+.mermaid-wrapper .actor foreignObject span,
+.mermaid-wrapper .actor foreignObject div {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-sm, 13px);
+  color: var(--ra-color-fg, inherit);
+}
+
+.mermaid-wrapper .messageText,
+.mermaid-wrapper .messageText foreignObject div {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-sm, 13px);
+  color: var(--ra-color-fg, inherit);
+}
+
+.mermaid-wrapper .messageLine0,
+.mermaid-wrapper .messageLine1,
+.mermaid-wrapper .messageLine {
+  stroke: var(--ra-color-muted, #666) !important;
+  stroke-width: 1px !important;
+  fill: none !important;
+}
+
+.mermaid-wrapper .activation0,
+.mermaid-wrapper .activation1,
+.mermaid-wrapper .activation2 {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #999) !important;
+  stroke-width: 1px !important;
+}
+
+/* 时序图生命线 */
+.mermaid-wrapper .actor-line {
+  stroke: var(--ra-color-border, #ccc) !important;
+  stroke-width: 1px !important;
+  stroke-dasharray: 2, 3;
+}
+
+/* 时序图箭头 */
+.mermaid-wrapper .sequenceNumber,
+.mermaid-wrapper .actor-activation {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #999) !important;
+}
+
+/* ===== 8. ER 图：实体框与关系线 ===== */
+.mermaid-wrapper .er.entityBox {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #999) !important;
+  stroke-width: 1px !important;
+}
+
+.mermaid-wrapper .er.entityLabel,
+.mermaid-wrapper .er.entityLabel foreignObject div {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-sm, 13px);
+  color: var(--ra-color-fg, inherit);
+  font-weight: 500;
+}
+
+.mermaid-wrapper .er.attributeBoxOdd,
+.mermaid-wrapper .er.attributeBoxEven {
+  fill: transparent !important;
+  stroke: var(--ra-color-border, #eee) !important;
+  stroke-width: 1px !important;
+}
+
+.mermaid-wrapper .er.attributeLabel,
+.mermaid-wrapper .er.attributeLabel foreignObject div {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-xs, 11px);
+  color: var(--ra-color-muted, #666);
+}
+
+.mermaid-wrapper .er.relationshipLine {
+  stroke: var(--ra-color-muted, #666) !important;
+  stroke-width: 1px !important;
+  fill: none !important;
+}
+
+.mermaid-wrapper .er.relationshipLabel,
+.mermaid-wrapper .er.relationshipLabelBox {
+  fill: transparent !important;
+  stroke: none !important;
+}
+
+.mermaid-wrapper .er.relationshipLabel foreignObject div {
+  font-family: var(--ra-font-body, inherit);
+  font-size: var(--ra-text-xs, 11px);
+  color: var(--ra-color-muted, #666);
+}
+
+/* ===== 9. 通用文字：所有未单独覆盖的文字元素 ===== */
+.mermaid-wrapper .label foreignObject div,
+.mermaid-wrapper .label foreignObject p,
+.mermaid-wrapper .labelText {
+  font-family: var(--ra-font-body, inherit);
+}
+
+/* ===== 10. 通用路径覆盖（兜底：覆盖所有未命中的 inline stroke） ===== */
+/* mermaid 11 stateDiagram 的连线 path 用 class "transition"（不在 .edgePath 容器里），
+   箭头 path 在 defs marker 里且无 class。用更宽泛的选择器兜底。 */
+.mermaid-wrapper svg .edgePath path,
+.mermaid-wrapper svg .flowchart-link,
+.mermaid-wrapper svg .messageLine,
+.mermaid-wrapper svg .relation,
+.mermaid-wrapper svg path.transition,
+.mermaid-wrapper svg path.edge-thickness-normal,
+.mermaid-wrapper svg .statediagram path {
+  stroke: var(--ra-color-muted, #666) !important;
+  stroke-width: 1px !important;
+  fill: none !important;
+}
+
+/* 箭头标记（在 defs marker 里，无 class） */
+.mermaid-wrapper svg defs marker path,
+.mermaid-wrapper svg defs marker circle,
+.mermaid-wrapper svg defs path {
+  fill: var(--ra-color-muted, #666) !important;
+  stroke: var(--ra-color-muted, #666) !important;
+}
+
+/* ===== 11. 打印优化 ===== */
+@media print {
+  .mermaid-wrapper > svg {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+}

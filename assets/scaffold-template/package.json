@@ -1,18 +1,19 @@
 {
-  "name": "beautiful-article-workspace",
+  "name": "business-analyzer-workspace",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "html": "npm run build && node -e \"require('fs').mkdirSync('article',{recursive:true});require('fs').copyFileSync('dist/index.html','article/article.html');console.log('built article/article.html')\"",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
+    "mermaid": "^11.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
     "reacticle": "latest"
   },
   "devDependencies": {
