@@ -4,6 +4,10 @@ node_modules/
 dist/
 .DS_Store
 
+# 构建产物 / 打包文件
+*.zip
+business-analyzer.zip
+
 # 验证 / 测试产物
 business-docs-test/
 .playwright-mcp/

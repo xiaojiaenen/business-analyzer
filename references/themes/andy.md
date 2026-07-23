@@ -7,7 +7,7 @@
 
 - **runtime theme id**：`andy`（`<ThemeProvider theme="andy">`）
 - **气质**：温暖人文派（Headspace）。暖奶油纸、友好南瓜橙、暖灰墨（非纯黑）、通体
-  圆体无衬线（Quicksand + Nunito）。**七套里唯一同时用大圆角 + 柔和暖阴影**的主题。
+  圆体无衬线（Quicksand + Nunito）。**十一套里唯一同时用大圆角 + 柔和暖阴影**的主题。
   柔软、平静、治愈，重在让人安心。完整继承语义化组件契约。
 
 ## 适合 / 不适合的文章类型

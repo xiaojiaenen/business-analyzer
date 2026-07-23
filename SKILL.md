@@ -1,7 +1,7 @@
 ---
 name: business-analyzer
 author: xiaojiaenen
-description: 对任何代码项目进行深度业务领域分析，产出一套面向零基础读者的精美 HTML 文档（业务全景图、领域模型、业务流程、关键概念等）。内建数据库只读抽取（MySQL/PG/Oracle/Doris/SQLServer 自动检测+Schema导出）、codegraph 代码索引、reacticle 渲染引擎（11 主题 + scaffolds + 完整 harness）。触发词：分析业务、了解业务、业务文档、领域分析、business analysis、domain analysis、业务全景、业务流程分析、帮我搞懂这个项目、新人上手业务、业务知识库、项目是干什么的、业务梳理。当用户提到想"从业务角度理解项目"、"零基础学业务"、"梳理领域知识"、"给新人做业务文档"时，果断使用本 skill。
+description: 对任何代码项目进行深度业务领域分析，产出一套面向零基础读者的精美 HTML 文档（业务全景图、领域模型、业务流程、关键概念等）。内建数据库只读抽取（MySQL/MariaDB/PG/Oracle/Doris/SQLServer/SQLite 自动检测+Schema导出）、codegraph 代码索引、reacticle 渲染引擎（11 主题 + scaffolds + 完整 harness）。触发词：分析业务、了解业务、业务文档、领域分析、business analysis、domain analysis、业务全景、业务流程分析、帮我搞懂这个项目、新人上手业务、业务知识库、项目是干什么的、业务梳理。当用户提到想"从业务角度理解项目"、"零基础学业务"、"梳理领域知识"、"给新人做业务文档"时，果断使用本 skill。
 ---
 
 # Business Analyzer · 业务领域分析器
@@ -566,6 +566,51 @@ python scripts/scaffold.py ./business-docs
 - [ ] 所有文档路由在 `App.tsx` 中注册
 - [ ] **PrintAllPage 已填充**：所有文档页面组件已 import 并排列到 `src/pages/PrintAllPage.tsx`（用于多文档 PDF 导出）
 - [ ] 构建失败时走了回退路径（见下方"异常恢复"）
+
+#### 硬性质检协议
+
+> 本段是各阶段质检的统一规则。`references/review-checklist.md` 和 `references/section-build.md` 引用本段作为权威依据。
+
+**核心原则**：每个节点用对的方式做对的事，不错开 SubAgent、不错写 review 文件。
+
+**Checkpoint 定义**（全流程共 3 个用户确认点 + 1 个终审）：
+
+| Checkpoint | 时机 | 确认内容 | 产物 |
+|-----------|------|---------|------|
+| **Checkpoint 0** | Phase 1 末尾 | 分析模式选择（A 重点深挖 / B 全量深挖） | `plan/plan.md` 写入模式选择 |
+| **Checkpoint 1** | Phase 3 开头 | 文档清单 + 业务能力→文档章节映射表 + 数据库连接确认 | `plan/plan.md` 写入文档清单和映射表 |
+| **Checkpoint 2** | Phase 4 生成完所有文档后、Phase 5 交付前 | 文档完整性审查：① 所有业务能力已覆盖 ② 异常分支覆盖率校验通过 ③ MQ topic 对称性校验通过 ④ 状态机完整（含退化标注） ⑤ 用户对内容准确性确认 | `review/final-review.md` 写入终审记录 |
+| **终审** | Phase 5 交付时 | 用户确认 `dist/index.html` 可打开、阅读顺序清晰、维护提醒已给出 | `review/final-review.md` 追加用户确认记录 |
+
+**Checkpoint 2 触发条件**：Phase 4 所有文档 Section 生成完毕、`npm run build` 成功后触发。
+
+**Checkpoint 2 用户交互**：
+> 🛑 **检查点 2 · 文档完整性审查**
+>
+> 所有文档已生成并构建成功。请审查以下完整性校验结果（已写入 `review/final-review.md`）：
+> 1. 业务能力覆盖：识别 N 个能力 → 全部映射到文档章节，无遗漏
+> 2. 异常分支覆盖率：所有子流程的 catch/rollback/compensate/throw 已逐个对应
+> 3. MQ topic 对称性：所有 topic 有产有消，孤悬 topic 已标注
+> 4. 状态机完整性：所有核心实体（模式 B 下所有有 status 的实体）状态机已提取
+> 5. 业务规则来源覆盖：至少 3 种来源类型（模式 B 下 8 路全扫）
+>
+> 请确认内容是否准确，有无需要修正的地方？
+
+**Section Reviewer SubAgent**（Phase 4 每个 Section 生成后）：
+- 每个 Section 写完后创建 Section Reviewer SubAgent
+- 对照清单核查：完成 outline 任务 / 符合文章类型结构 / Raw 边界正确 / 用对 `--ra-*` token
+- 产物写入 `review/first-spread-review.md`
+- 不通过则返工该 Section
+
+**质检文件清单**（铁律，不能写错文件）：
+
+| 文件 | 写入时机 | 内容 |
+|------|---------|------|
+| `review/first-spread-review.md` | Phase 4 Section Reviewer 产出 | 首轮 Section 级质检记录 |
+| `review/final-review.md` | Phase 4 末尾 Checkpoint 2 + Phase 5 终审 | 终审完整性校验 + 用户确认记录 |
+| `review/repair-log.md` | Phase 4 返工时 | 每次返工的修改记录 |
+
+详见 `references/review-checklist.md`。
 
 ---
 

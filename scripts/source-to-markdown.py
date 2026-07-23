@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source → Markdown extraction helper for the Beautiful Article skill.
+"""Source → Markdown extraction helper for the business-analyzer skill.
 
 Mechanically extracts text from a PDF / DOCX / HTML file (or URL) into rough
 Markdown. It does NOT clean editorial noise, mark image placeholders, or record

@@ -28,13 +28,14 @@ python scripts/scaffold.py --list-themes
   - `components/` — 共享组件（Cover、Colophon、BackLink、MermaidDiagram）
   - `pages/` — 文档页面（IndexPage 导航首页 + SampleDoc 示例文档 + PrintAllPage 打印专用页）
   - `sections/` — Section 组件（按文档分组）
+  - `raw-blocks/` — Raw 块素材（自定义 HTML/SVG，见 `references/raw-policy.md`）
 - 每个页面组件内通过 `<ThemeProvider theme="...">` 声明主题——**不同页面可用不同主题**。
 - IndexPage 默认 `press` 主题，SampleDoc 默认 `tufte` 主题，展示多主题能力。
 - 共享组件 `Colophon`（"Made with Business Analyzer" + GitHub 链接）已内置，
   **不可删除**（见 SKILL.md「默认策略」）。
 - 共享组件 `Cover`（书封式封面外壳 + 占位）已内置，各页面自行决定是否使用。
 - 共享组件 `BackLink`（返回文档导航）已内置，各页面自行决定是否使用。
-- 创建工作记忆目录 `plan/`、`review/`、`analysis/`（`analysis/` 存 `business-knowledge.md` 事实底座）。
+- 创建工作记忆目录 `plan/`、`review/`、`analysis/`（`analysis/` 存 `business-knowledge.md` 事实底座 + `db-schema/` 数据库 Schema 抽取产物）。
 - `katex` / `prismjs` 作为 `reacticle` 的依赖会被自动带下来，无需单独声明。
 
 ## 升级组件库

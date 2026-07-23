@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MarkItDown-backed Source -> Markdown helper for Beautiful Article.
+"""MarkItDown-backed Source -> Markdown helper for Business Analyzer.
 
 This script intentionally depends on MarkItDown and fails clearly when it is not
 available. Use source-to-markdown.py as the lightweight fallback.

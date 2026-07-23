@@ -77,7 +77,7 @@ Mermaid 默认 neutral 主题用 sans-serif + 粗方框 + 灰箭头，跟 reacti
 
 ### 7. 数据库只读抽取
 
-支持 MySQL / PostgreSQL / Oracle / Doris / SQL Server 自动检测 + Schema 抽取，**仅 SELECT information_schema / pg_catalog，不写不删**。连接失败不影响后续分析，从代码维度继续。
+支持 MySQL / MariaDB / PostgreSQL / Oracle / Doris / SQL Server / SQLite 自动检测 + Schema 抽取，**仅 SELECT information_schema / pg_catalog，不写不删**。连接失败不影响后续分析，从代码维度继续。
 
 ### 8. 增量更新
 
@@ -310,30 +310,54 @@ business-analyzer/
 ├── README.md                   # 本文件
 ├── references/                 # 参考文档（AI 按需读）
 │   ├── analysis-methods.md     # 业务分析方法（四步递进）
-│   ├── end-to-end-mainline.md  # 端到端主线识别
-│   ├── state-machine-guide.md  # 状态机提取
-│   ├── diagram-guide.md        # Mermaid 图表指南
-│   ├── html-rendering.md       # Phase 4 渲染入口
-│   ├── scaffold.md             # 脚手架说明
-│   ├── document-templates.md   # 文档模板
-│   ├── microservices-guide.md  # 微服务分析
+│   ├── article-types.md        # 文章类型与适配
+│   ├── asset-policy.md         # 素材 / 图片政策
 │   ├── codegraph-guide.md      # CodeGraph 使用
+│   ├── component-policy.md     # 组件使用政策
+│   ├── cover.md                # 封面设计指南
 │   ├── database-analysis.md    # 数据库分析
+│   ├── diagram-guide.md        # Mermaid 图表指南
+│   ├── document-templates.md   # 文档模板
+│   ├── end-to-end-mainline.md  # 端到端主线识别
+│   ├── harness.md              # harness 流程
+│   ├── html-output.md          # HTML 输出政策
+│   ├── html-rendering.md       # Phase 4 渲染入口
 │   ├── incremental-update.md   # 增量更新
+│   ├── information-density.md  # 信息密度控制
+│   ├── layout.md               # 布局指南
+│   ├── microservices-guide.md  # 微服务分析
 │   ├── pdf-output.md           # PDF 导出
-│   ├── themes/                 # 11 个主题 profile
-│   │   ├── index.json
-│   │   ├── tufte.md
-│   │   ├── press.md
-│   │   └── ...
-│   └── ...
+│   ├── plan-template.md        # 计划模板
+│   ├── project-types.md        # 项目类型
+│   ├── raw-policy.md           # Raw 政策
+│   ├── repair-policy.md        # 修复政策
+│   ├── review-checklist.md     # 评审清单
+│   ├── scaffold.md             # 脚手架说明
+│   ├── section-build.md        # Section 构建指南
+│   ├── source-to-markdown.md   # 源材料转 Markdown
+│   ├── state-machine-guide.md  # 状态机提取
+│   ├── theme-selection.md      # 主题选择
+│   └── themes/                 # 11 个主题 profile
+│       ├── index.json
+│       ├── andy.md
+│       ├── bayer.md
+│       ├── bodoni.md
+│       ├── freddie.md
+│       ├── fuller.md
+│       ├── knuth.md
+│       ├── press.md
+│       ├── shannon.md
+│       ├── sottsass.md
+│       ├── tufte.md
+│       └── vignelli.md
 ├── scripts/                    # Python 脚本
-│   ├── scaffold.py             # 创建文档项目工作区
-│   ├── db-introspect.py        # 数据库 Schema 抽取（只读）
 │   ├── analyze-schema.py       # Schema → 业务实体分析
+│   ├── db-introspect.py        # 数据库 Schema 抽取（只读）
 │   ├── html-to-pdf.py          # HTML → PDF（headless 浏览器）
-│   ├── source-to-markdown.py   # 项目 MD/TXT 转可读格式
-│   └── source-to-markdown-markitdown.py  # PDF/DOCX → Markdown
+│   ├── pdf-print-overrides.css # PDF 打印覆盖样式
+│   ├── scaffold.py             # 创建文档项目工作区
+│   ├── source-to-markdown-markitdown.py  # PDF/DOCX → Markdown（MarkItDown）
+│   └── source-to-markdown.py   # 项目 MD/TXT 转可读格式
 └── assets/
     └── scaffold-template/      # 文档项目模板（scaffold.py 复制源）
         ├── src/

@@ -9,22 +9,22 @@
 类型"的语义化选项里（见 SKILL.md Phase 3），**只在用户明确想精修**（如"longform 但只要 60%"
 = 一篇被深度编辑的长文）才作为非标配组合记入 plan.md。
 
-Phase 2 选定类型后，读对应 `article-types/<type>.md` 拿结构 / 组件 / Raw 边界 / 配图倾向 /
+Phase 2 选定类型后，读本文件下方「各类型详解」章节拿结构 / 组件 / Raw 边界 / 配图倾向 /
 自检。**非标配组合**要在 `plan/plan.md` Brief 段同时记下"标配 X% → 用户覆盖 Y%"，并让主 Agent
-在写每节时手动调整正文/视觉比例（不能照搬 article-types/<type>.md 的默认建议）。
+在写每节时手动调整正文/视觉比例（不能照搬下文各类型的默认建议）。
 
 | 类型 | 推荐信息保留 | 用途 | 典型结构 | 详情 |
 |---|---|---|---|---|
-| `longform` | 100% | 完整长文、归档、深度阅读 | Hero / Lead / Summary / 多 Section / Raw 增强 / Conclusion | `article-types/longform.md` |
-| `full-report` | 80% | 研究报告、正式分析 | 执行摘要 / 背景 / 证据 / 数据 / 风险 / 结论 | `article-types/full-report.md` |
-| `tutorial` | 80-100% | 教学、步骤、上手 | 目标 / 步骤 / 示例 / 练习 / 总结 | `article-types/tutorial.md` |
-| `explainer` | 80% | 解释技术、系统、概念 | 问题 / 机制 / 图解 / 示例 / 常见误区 | `article-types/explainer.md` |
-| `dialogue` | 80% | 对话 / Q&A / 访谈 / 播客 / AMA | Hero / 嘉宾 / 多话题 Section / 关键观点摘要 | `article-types/dialogue.md` |
-| `review` | 60-80% | PR / 方案 / 事故 / 设计审阅 | 背景 / 发现 / 影响 / 建议 / 行动 | `article-types/review.md` |
-| `essay` | 60-80% | 观点、评论、叙事 | 开场 / 论点 / 例证 / 转折 / 收束 | `article-types/essay.md` |
-| `briefing` | 40-60% | 给忙人快速判断 | 结论先行 / 关键证据 / 取舍 / 下一步 | `article-types/briefing.md` |
-| `interactive-explainer` | ~25%（原文摘录占比，**非删 75%**） | **Raw 交互为主载体的"会用了再走"式学习页**（参考 3blue1brown / distill.pub / ciechanow.ski）。本质是**内容重构**：只摘核心知识点，其余 AI 围绕它们全新创作 | 每知识点：定义 / 交互演示 / 自己试 / 验证理解 | `article-types/interactive-explainer.md` |
-| `visual-essay` | 20-60% | 展示、传播、图文主导 | 少文字 / 大视觉 / 强节奏 / 章节短 | `article-types/visual-essay.md` |
+| `longform` | 100% | 完整长文、归档、深度阅读 | Hero / Lead / Summary / 多 Section / Raw 增强 / Conclusion | 见下方「各类型详解 · longform」 |
+| `full-report` | 80% | 研究报告、正式分析 | 执行摘要 / 背景 / 证据 / 数据 / 风险 / 结论 | 见下方「各类型详解 · full-report」 |
+| `tutorial` | 80-100% | 教学、步骤、上手 | 目标 / 步骤 / 示例 / 练习 / 总结 | 见下方「各类型详解 · tutorial」 |
+| `explainer` | 80% | 解释技术、系统、概念 | 问题 / 机制 / 图解 / 示例 / 常见误区 | 见下方「各类型详解 · explainer」 |
+| `dialogue` | 80% | 对话 / Q&A / 访谈 / 播客 / AMA | Hero / 嘉宾 / 多话题 Section / 关键观点摘要 | 见下方「各类型详解 · dialogue」 |
+| `review` | 60-80% | PR / 方案 / 事故 / 设计审阅 | 背景 / 发现 / 影响 / 建议 / 行动 | 见下方「各类型详解 · review」 |
+| `essay` | 60-80% | 观点、评论、叙事 | 开场 / 论点 / 例证 / 转折 / 收束 | 见下方「各类型详解 · essay」 |
+| `briefing` | 40-60% | 给忙人快速判断 | 结论先行 / 关键证据 / 取舍 / 下一步 | 见下方「各类型详解 · briefing」 |
+| `interactive-explainer` | ~25%（原文摘录占比，**非删 75%**） | **Raw 交互为主载体的"会用了再走"式学习页**（参考 3blue1brown / distill.pub / ciechanow.ski）。本质是**内容重构**：只摘核心知识点，其余 AI 围绕它们全新创作 | 每知识点：定义 / 交互演示 / 自己试 / 验证理解 | 见下方「各类型详解 · interactive-explainer」 |
+| `visual-essay` | 20-60% | 展示、传播、图文主导 | 少文字 / 大视觉 / 强节奏 / 章节短 | 见下方「各类型详解 · visual-essay」 |
 
 ## 选型提示
 

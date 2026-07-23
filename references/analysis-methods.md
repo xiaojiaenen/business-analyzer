@@ -398,7 +398,7 @@ grep -rE "(MAX_[A-Z]|MIN_[A-Z]|LIMIT_[A-Z]|THRESHOLD|TIMEOUT_)" --include="*.ts"
 | `FOREIGN KEY` | 实体关系约束（如订单必须属于有效用户） |
 | `DEFAULT` 业务值 | 默认业务状态（如新建订单默认 status='pending'） |
 
-**注意**：当前 `analyze-schema.py` 只抽取了字段，未抽取表级约束。需检查 schema.json 中是否有 `constraints`/`checks`/`indexes` 字段，如有则一并翻译为业务规则。
+⚠️ 当前 `analyze-schema.py` 仅抽取字段级约束，表级约束（CHECK/UNIQUE/FOREIGN KEY）需 agent 手动 grep 补充。
 
 ### 产出格式
 

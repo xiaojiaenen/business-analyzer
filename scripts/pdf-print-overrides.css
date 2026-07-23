@@ -1,5 +1,5 @@
 /*
- * PDF print overrides for Beautiful Article.
+ * PDF print overrides for Business Analyzer.
  *
  * Injected by scripts/html-to-pdf.sh into article.html's <head> right before
  * Chromium headless prints it. reacticle's own print.css already handles

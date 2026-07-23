@@ -95,7 +95,22 @@ export function PrintAllPage() {
 
       {/* Agent 按 IndexPage DOCS 数组的顺序，导入并渲染所有文档页面组件。
           每份文档之间加 <PageBreak /> 分页。
-          文档页面组件自带 ThemeProvider + Article + Hero + Colophon，无需额外包裹。 */}
+          文档页面组件自带 ThemeProvider + Article + Hero + Colophon，无需额外包裹。
+
+          复杂项目按业务域拆分多份文档时，建议按域分组排列（用注释分隔），
+          跨域总览文档放最后（与首页 DOCS 数组顺序一致）。示例（取消注释并改实际组件名）：
+
+          // ── 综合域 ──
+          <BusinessOverview /><PageBreak />
+          <DomainModel /><PageBreak />
+          <Glossary /><PageBreak />
+          // ── 采购域 ──
+          <ProcurementFlow /><PageBreak />
+          // ── 销售域 ──
+          <SalesFlow /><PageBreak />
+          // ── 跨域总览（放最后）──
+          <CrossDomainOverview /><PageBreak />
+      */}
 
       <SampleDoc />
       <PageBreak />

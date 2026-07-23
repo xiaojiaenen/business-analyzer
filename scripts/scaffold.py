@@ -108,6 +108,7 @@ def main():
         "src/components",
         "src/pages",
         "src/sections/sample",
+        "src/raw-blocks",
         "plan",
         "review",
         "analysis",
@@ -206,10 +207,13 @@ def main():
   │   │   ├── IndexPage.tsx     # 导航首页（导出 PDF 按钮 + 搜索 + 按域分组）
   │   │   ├── SampleDoc.tsx     # 示例文档
   │   │   └── PrintAllPage.tsx  # 打印专用页（所有文档连排，PDF 导出用）
-  │   └── sections/             # Section 组件（按文档分组）
-  │       └── sample/
-  │           └── 01-opening.tsx
-  ├── plan/ review/ analysis/   # 工作记忆（analysis/business-knowledge.md 是事实底座）
+  │   ├── sections/             # Section 组件（按文档分组）
+  │   │   └── sample/
+  │   │       └── 01-opening.tsx
+  │   └── raw-blocks/           # Raw 块素材（自定义 HTML/SVG，见 references/raw-policy.md）
+  ├── plan/                     # 规划文件（plan.md）
+  ├── review/                   # 审查文件（first-spread-review.md / final-review.md / repair-log.md）
+  └── analysis/                 # 工作记忆（business-knowledge.md 是事实底座，db-schema/ 是数据库 Schema 抽取产物）
   └── package.json
 
 下一步：

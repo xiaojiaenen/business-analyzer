@@ -64,9 +64,13 @@ Phase 1 扫描 + Phase 2 深潜的结果，按以下结构写入 `business-knowl
 ...
 ```
 
-## 不需要的产物（和上游 reacticle skill 的区别）
+## 不需要的产物
 
-本 skill **不产出** `source/source.md`、`source/extraction-notes.md`——那些是上游处理
-URL/PDF/DOCX 输入时用的。本 skill 输入是代码，分析结果直接写 `business-knowledge.md`。
+本 skill 的主流程（代码分析）**不产出** `source/source.md`、`source/extraction-notes.md`——
+那是 `scripts/source-to-markdown*.py` 处理外部 PDF/DOCX/URL 输入时的可选中间产物，仅在用户
+显式导入外部资料时才会生成。本 skill 输入是代码，分析结果直接写 `business-knowledge.md`。
+
+> 说明：reacticle 是本 skill 在 Phase 4 渲染 HTML 时通过 `npm install` 引入的**运行时依赖**
+> （提供主题 / 组件 / 渲染引擎），不是"上游 skill"。本 skill 自身是独立、完整的分析工具。
 
 Phase 4 写 Section 组件时，直接读 `business-knowledge.md` 对应段落，不需要中间转换层。

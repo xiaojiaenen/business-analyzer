@@ -9,6 +9,9 @@ const THEME = "tufte";
 // 示例文档页面 — 展示单项目中一个文档页面的完整结构。
 // 每个文档页面自行声明主题（ThemeProvider）、是否需要封面（Cover）、
 // 使用哪些 Section 组件。Agent 复制此模式创建新的文档页面。
+//
+// 域文档（如"采购域业务流程"）应在 Hero.meta 里加"业务域"项，
+// 并给 BackLink 传 domain 属性，让读者返回时直接定位到首页对应域分组。
 export function SampleDoc() {
   return (
     <ThemeProvider theme={THEME}>
@@ -18,7 +21,10 @@ export function SampleDoc() {
         <Hero
           title="示例文档"
           subtitle="展示页面结构、主题和组件用法"
-          meta={[{ label: "日期", value: "2026-07-22" }]}
+          meta={[
+            { label: "日期", value: new Date().toISOString().slice(0, 10) },
+            // { label: "业务域", value: "综合" }, // 域文档在此填业务域名
+          ]}
         />
         <Lead>
           这是一个示例文档页面，展示如何在单项目中组织文档、切换主题和使用组件。

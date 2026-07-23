@@ -93,7 +93,7 @@ subagent 各**拥有一个** `sections/<doc-name>/NN-*.tsx` 并行开发。**主
 
 ## 每个 Section 完工（必走质检 · SubAgent · 消息返回）
 
-按硬性质检协议创建 **Section Reviewer** SubAgent，对照清单核查：完成 outline 任务 / 符合
+按硬性质检协议（见 SKILL.md「硬性质检协议」段，Phase 4 完成标准之后）创建 **Section Reviewer** SubAgent，对照清单核查：完成 outline 任务 / 符合
 信息保留比例 / 与前后衔接 / 不过度组件化 / 正文充足 / Raw 与配图有明确目的 / **本节序号
 自洽**（`Section index` 等于 `<NN>`，各 `Subsection` 序号前缀等于 `<NN>`）。
 

@@ -98,7 +98,7 @@ Checkpoint 1。
 
 ## 与其它 reference 的关系
 
-- 文章类型选择：见 `article-types.md` → `article-types/<type>.md`。
+- 文章类型选择：见 `article-types.md`（含各类型详解）。
 - 信息保留比例：见 `information-density.md`。
 - 主题选择：见 `theme-selection.md`，结论落到本模板的 **Theme** 段。
 - 版式宽度 / TOC：见 `layout.md`，结论落到本模板的 **Brief** 段。
