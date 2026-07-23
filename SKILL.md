@@ -1,5 +1,6 @@
 ---
 name: business-analyzer
+author: xiaojiaenen
 description: 对任何代码项目进行深度业务领域分析，产出一套面向零基础读者的精美 HTML 文档（业务全景图、领域模型、业务流程、关键概念等）。内建数据库只读抽取（MySQL/PG/Oracle/Doris/SQLServer 自动检测+Schema导出）、codegraph 代码索引、reacticle 渲染引擎（11 主题 + scaffolds + 完整 harness）。触发词：分析业务、了解业务、业务文档、领域分析、business analysis、domain analysis、业务全景、业务流程分析、帮我搞懂这个项目、新人上手业务、业务知识库、项目是干什么的、业务梳理。当用户提到想"从业务角度理解项目"、"零基础学业务"、"梳理领域知识"、"给新人做业务文档"时，果断使用本 skill。
 ---
 

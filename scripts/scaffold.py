@@ -101,6 +101,7 @@ def main():
     print(f"▸ 架构：单项目 SPA（HashRouter，所有文档共享一个项目）")
     print(f"▸ 主题：每页独立声明（IndexPage=press, SampleDoc=tufte）")
     print(f"▸ reacticle：从 npm 安装最新发布版")
+    print(f"▸ business-analyzer by xiaojiaenen · https://github.com/xiaojiaenen/business-analyzer")
 
     # ── 创建目录结构 ──
     dirs = [

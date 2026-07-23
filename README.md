@@ -1,7 +1,9 @@
 # Business Analyzer · 业务领域分析器
 
-> 对任何代码项目进行深度业务领域分析，产出一套面向零基础读者的精美 HTML 业务文档。
+> 对任何代码项目进行深度业务领域分析，产出一套面向零基础读者的精美 HTML 文档。
 > **代码和数据库是素材，产出是业务文档——不懂技术的人读完应该能理解这个项目在做什么生意。**
+
+**作者**：[xiaojiaenen](https://github.com/xiaojiaenen) · **仓库**：https://github.com/xiaojiaenen/business-analyzer · **License**：MIT
 
 ---
 
@@ -417,4 +419,4 @@ Phase 5 交付与维护
 
 ## License
 
-MIT
+MIT © [xiaojiaenen](https://github.com/xiaojiaenen)
