@@ -3,22 +3,26 @@
  *
  * Mermaid 默认 neutral 主题用 sans-serif + 粗方框 + 灰箭头，跟 reacticle
  * 衬线/克制美学冲突。本文件用 --ra-* CSS 变量覆盖 Mermaid SVG 内部样式，
- * 让图表自动跟随当前文章主题（tufte/press/shannon/...）。
+ * 让图表自动跟随当前文章主题（tufte/press/shannon/fuller/...）。
  *
  * 原理：Mermaid 11 渲染出的 SVG 内部用 inline style 设 fill/stroke，
  * 优先级高于普通 CSS。因此本文件所有 fill/stroke 都用 !important 覆盖。
  * foreignObject 内的 HTML 文字可继承外部 CSS（font-family/color 等），
  * 不需要 !important。
  *
- * ── 对比度设计（v2 修复）──
- * 1) 节点：半透明 surface 填充 + 可辨识边框。纯 transparent + 浅 border 在
- *    浅色主题下节点几乎隐形；用 --ra-color-surface-raised 做柔和底，
- *    边框用 muted（比 border 深一档）保证节点轮廓可读。
- * 2) 文字：节点/边标签统一用 --ra-color-fg（正文前景色），不用 muted。
- *    muted 在浅色主题下是极浅灰，边标签 11px + 浅灰 = 看不清。
- *    字号提升：节点 13px→14px，边标签 11px→12px，加粗到 500。
- * 3) stateDiagram 文字必须显式设 color —— mermaid 状态图标签不走 .nodeLabel，
- *    只走 .stateLabel，若不设色会继承 mermaid 默认深色文字，在深色主题下隐形。
+ * ── 对比度设计（v3：适配深浅双主题）──
+ * reacticle 所有主题统一提供这些 token（已逐一核对 6 个主题 css）：
+ *   --ra-color-bg          页面背景
+ *   --ra-color-surface     面板/卡片背景
+ *   --ra-color-text        正文文字色（浅色主题=深字，深色主题=浅字）
+ *   --ra-color-muted       次要文字/描边
+ *   --ra-color-border      边框
+ *   --ra-color-border-strong 强调边框
+ *   ⚠ 不存在 --ra-color-fg / --ra-color-surface-raised（勿用，会退化为硬编码）
+ *
+ * 因此文字一律用 var(--ra-color-text)，节点底用 var(--ra-color-surface)，
+ * 边框用 var(--ra-color-muted)，连线用 var(--ra-color-muted)。
+ * 深浅主题下自动反色：浅色主题=深字浅底，深色主题=浅字深底。
  */
 
 /* ===== 1. SVG 容器：居中、自适应、去背景 ===== */
@@ -31,32 +35,32 @@
   background: transparent !important;
 }
 
-/* ===== 2. flowchart 节点：半透明底、可辨识边框、去阴影 ===== */
+/* ===== 2. flowchart 节点：主题 surface 底 + 可辨识边框 ===== */
 .mermaid-wrapper .node rect,
 .mermaid-wrapper .node circle,
 .mermaid-wrapper .node ellipse,
 .mermaid-wrapper .node polygon,
 .mermaid-wrapper .node path {
-  fill: var(--ra-color-surface-raised, rgba(128, 128, 128, 0.07)) !important;
-  stroke: var(--ra-color-muted, #777) !important;
-  stroke-width: 1px !important;
+  fill: var(--ra-color-surface, rgba(128, 128, 128, 0.08)) !important;
+  stroke: var(--ra-color-border-strong, var(--ra-color-muted, #777)) !important;
+  stroke-width: 1.2px !important;
   filter: none !important;
   rx: 4;
 }
 
-/* 节点文字：跟随正文字体、加粗提升可读性 */
+/* 节点文字：主题 text 色 + 加粗提升可读性 */
 .mermaid-wrapper .node .label,
 .mermaid-wrapper .nodeLabel,
 .mermaid-wrapper .nodeLabel foreignObject div,
 .mermaid-wrapper .nodeLabel foreignObject p {
   font-family: var(--ra-font-body, var(--ra-font-serif, inherit));
   font-size: var(--ra-text-base, 14px);
-  color: var(--ra-color-fg, #222) !important;
+  color: var(--ra-color-text, #222) !important;
   font-weight: 500;
   line-height: 1.4;
 }
 
-/* ===== 2b. stateDiagram 节点文字：显式设色（防止深色主题下隐形） ===== */
+/* ===== 2b. stateDiagram 节点文字：显式设色（深色主题必需） ===== */
 .mermaid-wrapper .stateLabel,
 .mermaid-wrapper .stateLabel foreignObject div,
 .mermaid-wrapper .stateLabel foreignObject p,
@@ -64,23 +68,23 @@
 .mermaid-wrapper .stateGroup .state-title {
   font-family: var(--ra-font-body, inherit);
   font-size: var(--ra-text-base, 14px);
-  color: var(--ra-color-fg, #222) !important;
+  color: var(--ra-color-text, #222) !important;
   font-weight: 500;
 }
 
-/* stateDiagram 状态圆角框：半透明底 + 可辨识边框 */
+/* stateDiagram 状态框：surface 底 + 可辨识边框 */
 .mermaid-wrapper .stateGroup rect,
 .mermaid-wrapper .stateGroup circle,
 .mermaid-wrapper .stateGroup ellipse,
 .mermaid-wrapper .stateGroup polygon,
 .mermaid-wrapper .stateGroup path,
 .mermaid-wrapper .state rect {
-  fill: var(--ra-color-surface-raised, rgba(128, 128, 128, 0.07)) !important;
-  stroke: var(--ra-color-muted, #777) !important;
-  stroke-width: 1px !important;
+  fill: var(--ra-color-surface, rgba(128, 128, 128, 0.08)) !important;
+  stroke: var(--ra-color-border-strong, var(--ra-color-muted, #777)) !important;
+  stroke-width: 1.2px !important;
 }
 
-/* ===== 3. 连线与箭头：更细、比 border 深一档的 muted 色 ===== */
+/* ===== 3. 连线与箭头：muted 色 ===== */
 .mermaid-wrapper .edgePath .path,
 .mermaid-wrapper .flowchart-link,
 .mermaid-wrapper .edgePaths .edgePath,
@@ -99,7 +103,7 @@
   stroke: var(--ra-color-muted, #666) !important;
 }
 
-/* ===== 4. 边标签：正文色 + 可辨识背景 ===== */
+/* ===== 4. 边标签：主题 text 色 + surface 底（遮挡穿过线条） ===== */
 .mermaid-wrapper .edgeLabel,
 .mermaid-wrapper .edgeLabel rect {
   background-color: var(--ra-color-surface, rgba(255, 255, 255, 0.85)) !important;
@@ -110,16 +114,16 @@
 .mermaid-wrapper .edgeLabel foreignObject p {
   font-family: var(--ra-font-body, inherit);
   font-size: var(--ra-text-sm, 12px);
-  color: var(--ra-color-fg, #333) !important;
+  color: var(--ra-color-text, #333) !important;
   font-weight: 500;
 }
 
 /* ===== 5. sequenceDiagram 参与者/消息 ===== */
 .mermaid-wrapper .actor,
 .mermaid-wrapper .actor-box {
-  fill: var(--ra-color-surface-raised, rgba(128, 128, 128, 0.07)) !important;
-  stroke: var(--ra-color-muted, #777) !important;
-  stroke-width: 1px !important;
+  fill: var(--ra-color-surface, rgba(128, 128, 128, 0.08)) !important;
+  stroke: var(--ra-color-border-strong, var(--ra-color-muted, #777)) !important;
+  stroke-width: 1.2px !important;
 }
 
 .mermaid-wrapper .actor-line,
@@ -135,14 +139,14 @@
 .mermaid-wrapper .messageText {
   font-family: var(--ra-font-body, inherit);
   font-size: var(--ra-text-sm, 12px);
-  color: var(--ra-color-fg, #333) !important;
+  color: var(--ra-color-text, #333) !important;
   font-weight: 500;
 }
 
 /* ===== 6. ER 图 ===== */
 .mermaid-wrapper .er.relationshipLine {
   stroke: var(--ra-color-muted, #666) !important;
-  stroke-width: 1px !important;
+  stroke-width: 1.2px !important;
   fill: none !important;
 }
 
@@ -155,7 +159,7 @@
 .mermaid-wrapper .er.relationshipLabel foreignObject div {
   font-family: var(--ra-font-body, inherit);
   font-size: var(--ra-text-sm, 12px);
-  color: var(--ra-color-fg, #333) !important;
+  color: var(--ra-color-text, #333) !important;
 }
 
 /* ===== 7. 通用文字：所有未单独覆盖的文字元素 ===== */
@@ -165,7 +169,7 @@
 .mermaid-wrapper .nodeLabel,
 .mermaid-wrapper .stateLabel {
   font-family: var(--ra-font-body, inherit);
-  color: var(--ra-color-fg, #222) !important;
+  color: var(--ra-color-text, #222) !important;
 }
 
 /* ===== 8. 通用路径覆盖（兜底：覆盖所有未命中的 inline stroke） ===== */
@@ -191,15 +195,11 @@
   stroke: var(--ra-color-muted, #666) !important;
 }
 
-/* ===== 9. 深色主题（shannon/fuller）下的文字保证 ===== */
-/* 深色主题的 --ra-color-fg 是浅色文字，--ra-color-muted 偏灰。 */
-/* 上面所有 color 都用 --ra-color-fg，深色主题下自动变浅色文字，无需额外处理。 */
-/* 这里只兜底：若主题未定义 surface-raised，边标签底会退化为半透明白，深色下可能偏亮，
-   用 currentColor 弱化。 */
-.mermaid-wrapper .edgeLabel rect {
-  background-color: var(--ra-color-surface, color-mix(in srgb, var(--ra-color-bg, #fff) 85%, transparent)) !important;
-  fill: var(--ra-color-surface, color-mix(in srgb, var(--ra-color-bg, #fff) 85%, transparent)) !important;
-}
+/* ===== 9. 深色主题文字保证（shannon/fuller 等） ===== */
+/* 深色主题的 --ra-color-text 是浅色文字（#e8e4d8 / #d2dbe2），
+   --ra-color-surface 是深色面板（#22211b / #29404f）。
+   上面所有 color 用 --ra-color-text、底用 --ra-color-surface，
+   深色主题下自动呈现"浅字深底"，无需额外分支。 */
 
 /* ===== 10. 打印优化 ===== */
 @media print {
