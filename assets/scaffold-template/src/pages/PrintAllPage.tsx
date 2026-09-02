@@ -1,12 +1,20 @@
 import { useEffect } from "react";
 import { Raw } from "reacticle";
 import { useNavigate, useLocation } from "react-router-dom";
-import { SampleDoc } from "./SampleDoc";
-// Agent 在此导入所有文档页面组件，例如：
-// import { BusinessOverview } from "./BusinessOverview";
-// import { DomainModel } from "./DomainModel";
-// import { CoreBusinessProcess } from "./CoreBusinessProcess";
-// import { Glossary } from "./Glossary";
+import { BusinessOverview } from "./BusinessOverview";
+import { DomainModel } from "./DomainModel";
+import { MesProcess } from "./MesProcess";
+import { WmsProcess } from "./WmsProcess";
+import { VmiProcess } from "./VmiProcess";
+import { CrossDomainFlow } from "./CrossDomainFlow";
+import { BusinessRules } from "./BusinessRules";
+import { RolesAndPermissions } from "./RolesAndPermissions";
+import { Glossary } from "./Glossary";
+import { SystemArchitecture } from "./SystemArchitecture";
+import { StateMachine } from "./StateMachine";
+import { BpmDomain } from "./BpmDomain";
+import { PlatformDomain } from "./PlatformDomain";
+import { AuxDomain } from "./AuxDomain";
 
 // 打印专用页面：把所有文档按顺序渲染到一个长页面里，用于导出 PDF。
 // 每份文档之间用分页符隔开（break-after: always），保证每份文档从新页开始。
@@ -37,11 +45,36 @@ export function PrintAllPage() {
 
   useEffect(() => {
     if (!shouldAutoPrint) return;
-    // 等 DOM 渲染完（多文档连排需要时间），延迟触发打印
-    const timer = setTimeout(() => {
-      window.print();
-    }, 800);
-    return () => clearTimeout(timer);
+    // 打印时机：不能固定延时——14 份文档 + 36 张 Mermaid 图是异步渲染的，
+    // 固定 1.5s 很可能图还没画出来，打印/导出 PDF 就是空白。
+    // 改为轮询等待：14 个 .ra-root 都出现 + 所有 .mermaid-wrapper 都 data-mermaid-ready
+    // （ready 或 error 均可），最多等 30s，然后才 window.print()。
+    let cancelled = false;
+    let tries = 0;
+    const tryPrint = () => {
+      if (cancelled) return;
+      const roots = document.querySelectorAll(".ra-root").length;
+      const wrappers = document.querySelectorAll(".mermaid-wrapper").length;
+      const readyWrappers = document.querySelectorAll(
+        '.mermaid-wrapper[data-mermaid-ready="ready"], .mermaid-wrapper[data-mermaid-ready="error"]'
+      ).length;
+      const done =
+        roots >= 14 && (wrappers === 0 || readyWrappers === wrappers);
+      if (done || tries >= 60) {
+        // 给浏览器最后一帧绘制的机会，再弹打印框
+        requestAnimationFrame(() => {
+          if (!cancelled) window.print();
+        });
+        return;
+      }
+      tries += 1;
+      setTimeout(tryPrint, 500);
+    };
+    const timer = setTimeout(tryPrint, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [shouldAutoPrint]);
 
   return (
@@ -89,42 +122,50 @@ export function PrintAllPage() {
           打印 / 另存为 PDF
         </button>
         <span style={{ fontSize: "var(--ra-text-sm, 0.875rem)", color: "var(--ra-color-muted, inherit)" }}>
-          预览模式：所有文档连排。点"打印"后在对话框选"另存为 PDF"。
+          预览模式：所有文档连排（14 份）。点"打印"后在对话框选"另存为 PDF"。
         </span>
       </div>
 
-      {/* Agent 按 IndexPage DOCS 数组的顺序，导入并渲染所有文档页面组件。
-          每份文档之间加 <PageBreak /> 分页。
-          文档页面组件自带 ThemeProvider + Article + Hero + Colophon，无需额外包裹。
-
-          复杂项目按业务域拆分多份文档时，建议按域分组排列（用注释分隔），
-          跨域总览文档放最后（与首页 DOCS 数组顺序一致）。示例（取消注释并改实际组件名）：
-
-          // ── 综合域 ──
-          <BusinessOverview /><PageBreak />
-          <DomainModel /><PageBreak />
-          <Glossary /><PageBreak />
-          // ── 采购域 ──
-          <ProcurementFlow /><PageBreak />
-          // ── 销售域 ──
-          <SalesFlow /><PageBreak />
-          // ── 跨域总览（放最后）──
-          <CrossDomainOverview /><PageBreak />
-      */}
-
-      <SampleDoc />
-      <PageBreak />
-
-      {/* Agent 添加更多文档，例如：
+      {/* ── 综合域 ── */}
       <BusinessOverview />
       <PageBreak />
       <DomainModel />
       <PageBreak />
-      <CoreBusinessProcess />
+      <CrossDomainFlow />
       <PageBreak />
       <Glossary />
       <PageBreak />
-      */}
+      <SystemArchitecture />
+      <PageBreak />
+      <StateMachine />
+      <PageBreak />
+      <BusinessRules />
+      <PageBreak />
+
+      {/* ── 制造执行域 ── */}
+      <MesProcess />
+      <PageBreak />
+
+      {/* ── 仓储物流域 ── */}
+      <WmsProcess />
+      <PageBreak />
+
+      {/* ── 供应商库存域 ── */}
+      <VmiProcess />
+      <PageBreak />
+
+      {/* ── 流程审批域 ── */}
+      <BpmDomain />
+      <PageBreak />
+
+      {/* ── 平台底座域 ── */}
+      <RolesAndPermissions />
+      <PageBreak />
+      <PlatformDomain />
+      <PageBreak />
+
+      {/* ── 辅助域 ── */}
+      <AuxDomain />
 
       {/* 打印说明 */}
       <Raw title="">

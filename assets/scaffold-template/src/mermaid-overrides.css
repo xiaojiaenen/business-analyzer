@@ -247,3 +247,139 @@
     page-break-inside: avoid;
   }
 }
+
+/* ===== 11. 图表点击放大（v6：灯箱交互） ===== */
+/* 外层 .mermaid-figure 是相对定位容器，hover 时显示"点击放大"提示 */
+.mermaid-figure {
+  position: relative;
+  display: block;
+  margin: 0 auto;
+}
+.mermaid-figure .mermaid-wrapper {
+  cursor: zoom-in;
+}
+.mermaid-figure .mermaid-wrapper svg {
+  transition: box-shadow 0.15s ease;
+  border-radius: 4px;
+}
+.mermaid-figure .mermaid-wrapper:hover svg {
+  box-shadow: 0 0 0 1px var(--ra-color-border, rgba(128,128,128,0.35));
+}
+.mermaid-figure .mermaid-wrapper:focus-visible {
+  outline: 2px solid var(--ra-color-text, #555);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* 右下角提示（浅色/深色主题都可用 surface+text 反色） */
+.mermaid-zoom-hint {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.15rem 0.5rem;
+  font-size: var(--ra-text-xs, 0.75rem);
+  line-height: 1.4;
+  color: var(--ra-color-muted, inherit);
+  background: color-mix(in srgb, var(--ra-color-bg, #fff) 78%, transparent);
+  border: 1px solid var(--ra-color-border, rgba(128,128,128,0.3));
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.mermaid-figure:hover .mermaid-zoom-hint {
+  opacity: 1;
+}
+
+/* ===== 12. 灯箱（lightbox） ===== */
+.mermaid-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
+}
+.mermaid-lightbox__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: rgba(20, 20, 24, 0.92);
+  color: #f2f2f2;
+  flex: 0 0 auto;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+.mermaid-lightbox__title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.mermaid-lightbox__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.mermaid-lightbox__controls button {
+  min-width: 2rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2f2f2;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.mermaid-lightbox__controls button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.mermaid-lightbox__controls .mermaid-lightbox__close {
+  margin-left: 0.3rem;
+  border-color: rgba(255, 120, 120, 0.45);
+  color: #ffb4b4;
+}
+.mermaid-lightbox__scale {
+  min-width: 3.2em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: #ddd;
+}
+/* 画布：铺满剩余空间，可滚动平移 */
+.mermaid-lightbox__canvas {
+  flex: 1 1 auto;
+  overflow: auto;
+  display: block;
+  padding: 1.5rem;
+}
+/* 内容容器宽度 = viewBox 宽 × scale（由组件内联样式控制），保证 svg 按真实像素放大 */
+.mermaid-lightbox__scroller {
+  margin: 0 auto;
+}
+.mermaid-lightbox__svgwrap {
+  width: 100%;
+}
+.mermaid-lightbox__svgwrap svg {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-width: none !important;
+  background: var(--ra-color-bg, #ffffff);
+  border-radius: 4px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+/* 打印时灯箱不出现 */
+@media print {
+  .mermaid-lightbox,
+  .mermaid-zoom-hint {
+    display: none !important;
+  }
+  .mermaid-figure .mermaid-wrapper svg {
+    box-shadow: none !important;
+  }
+}
