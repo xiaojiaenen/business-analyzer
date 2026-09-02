@@ -23,6 +23,17 @@
  * 因此文字一律用 var(--ra-color-text)，节点底用 var(--ra-color-surface)，
  * 边框用 var(--ra-color-muted)，连线用 var(--ra-color-muted)。
  * 深浅主题下自动反色：浅色主题=深字浅底，深色主题=浅字深底。
+ *
+ * ── 字号一致性（v4：防文字截断）──
+ * Mermaid 布局计算节点大小时，文本宽度按 mermaid.initialize.themeVariables
+ * 设的 fontSize 测量（此处 = 13px）。如果 CSS 把实际渲染字号改大
+ * （比如用 var(--ra-text-base) ≈ 16px + line-height: 1.4），实际文字
+ * 就会比节点预留空间大 → 多行文字换行变多，底部超出节点框，被
+ * foreignObject/节点框裁切，视觉上"文字没展示完全被截断"。
+ *
+ * 修复原则：节点/状态/边/消息 文字的 font-size 与 line-height 用固定 px，
+ * 不依赖 --ra-text-base / --ra-text-sm 等 rem 变量，与 mermaid 测量
+ * 保持一致（≈ 13px / 12px）。颜色/字体族仍用 token 跟随主题。
  */
 
 /* ===== 1. SVG 容器：居中、自适应、去背景 ===== */
@@ -48,28 +59,32 @@
   rx: 4;
 }
 
-/* 节点文字：主题 text 色 + 加粗提升可读性 */
+/* 节点文字：字体与 mermaid 测量一致（防横向溢出）+ 固定 13px + 主题 text 色。
+   ⚠ font-family 不能换成 reacticle 衬线主题体：mermaid 布局测量用
+   "trebuchet ms",verdana,arial（见 SVG 内 <style>），若渲染字体更宽，
+   文字会超出 fo 被裁。这里显式同款字体栈，保证测量=渲染。 */
 .mermaid-wrapper .node .label,
 .mermaid-wrapper .nodeLabel,
 .mermaid-wrapper .nodeLabel foreignObject div,
 .mermaid-wrapper .nodeLabel foreignObject p {
-  font-family: var(--ra-font-body, var(--ra-font-serif, inherit));
-  font-size: var(--ra-text-base, 14px);
+  font-family: "trebuchet ms", "PingFang SC", "Microsoft YaHei", verdana, arial, sans-serif !important;
+  font-size: 13px !important;
   color: var(--ra-color-text, #222) !important;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.25;
 }
 
-/* ===== 2b. stateDiagram 节点文字：显式设色（深色主题必需） ===== */
+/* ===== 2b. stateDiagram 节点文字：显式设色（深色主题必需）+ 13px 防截断 ===== */
 .mermaid-wrapper .stateLabel,
 .mermaid-wrapper .stateLabel foreignObject div,
 .mermaid-wrapper .stateLabel foreignObject p,
 .mermaid-wrapper .stateGroup .state-label,
 .mermaid-wrapper .stateGroup .state-title {
-  font-family: var(--ra-font-body, inherit);
-  font-size: var(--ra-text-base, 14px);
+  font-family: "trebuchet ms", "PingFang SC", "Microsoft YaHei", verdana, arial, sans-serif !important;
+  font-size: 13px !important;
   color: var(--ra-color-text, #222) !important;
   font-weight: 500;
+  line-height: 1.25;
 }
 
 /* stateDiagram 状态框：surface 底 + 可辨识边框 */
@@ -112,10 +127,11 @@
 
 .mermaid-wrapper .edgeLabel foreignObject div,
 .mermaid-wrapper .edgeLabel foreignObject p {
-  font-family: var(--ra-font-body, inherit);
-  font-size: var(--ra-text-sm, 12px);
+  font-family: "trebuchet ms", "PingFang SC", "Microsoft YaHei", verdana, arial, sans-serif !important;
+  font-size: 12px !important;
   color: var(--ra-color-text, #333) !important;
   font-weight: 500;
+  line-height: 1.2;
 }
 
 /* ===== 5. sequenceDiagram 参与者/消息 ===== */
@@ -137,10 +153,11 @@
 .mermaid-wrapper .actor .actor-label,
 .mermaid-wrapper .actor-label,
 .mermaid-wrapper .messageText {
-  font-family: var(--ra-font-body, inherit);
-  font-size: var(--ra-text-sm, 12px);
+  font-family: "trebuchet ms", "PingFang SC", "Microsoft YaHei", verdana, arial, sans-serif !important;
+  font-size: 12px !important;
   color: var(--ra-color-text, #333) !important;
   font-weight: 500;
+  line-height: 1.2;
 }
 
 /* ===== 6. ER 图 ===== */
@@ -157,9 +174,10 @@
 }
 
 .mermaid-wrapper .er.relationshipLabel foreignObject div {
-  font-family: var(--ra-font-body, inherit);
-  font-size: var(--ra-text-sm, 12px);
+  font-family: "trebuchet ms", "PingFang SC", "Microsoft YaHei", verdana, arial, sans-serif !important;
+  font-size: 12px !important;
   color: var(--ra-color-text, #333) !important;
+  line-height: 1.2;
 }
 
 /* ===== 7. 通用文字：所有未单独覆盖的文字元素 ===== */
@@ -168,8 +186,29 @@
 .mermaid-wrapper .labelText,
 .mermaid-wrapper .nodeLabel,
 .mermaid-wrapper .stateLabel {
-  font-family: var(--ra-font-body, inherit);
+  font-family: "trebuchet ms", "PingFang SC", "Microsoft YaHei", verdana, arial, sans-serif !important;
   color: var(--ra-color-text, #222) !important;
+}
+
+/* ===== 7b. 防文字截断：节点文字换行行为与 mermaid 布局测量一致 ===== */
+/* Mermaid 对每个节点标签在 <div> 内联 style 上动态决定换行策略并据此
+   计算 foreignObject 尺寸：
+     短标签 → div inline white-space: nowrap（单行，fo 高 19.5px/行）
+     长标签 → div inline white-space: break-spaces + width: 200px（自动折行，
+              fo 高按行数预留 19.5px × 行数）
+   但 foreignObject 内的 <p> 会被 reacticle 等文档级 CSS 设成
+   white-space: normal，覆盖 div 的换行决定 → 单行标签被折成两行
+   （2×16px > fo 19.5px，下半被裁）或行数与 fo 预留不一致。
+   修复：p/span 一律 white-space: inherit（继承各自 div 的 nowrap 或
+   break-spaces），【不改 div 本身】——div 的内联样式是 mermaid 布局
+   的依据，动它会让所有标签失去单行/折行约定。font-size 固定 13px 与
+   mermaid 测量字号一致；font-family 与 mermaid 测量字体同款，避免
+   主题衬线体比测量字体宽导致横向溢出。 */
+.mermaid-wrapper foreignObject p,
+.mermaid-wrapper foreignObject span {
+  white-space: inherit !important;
+  overflow-wrap: inherit !important;
+  word-break: inherit !important;
 }
 
 /* ===== 8. 通用路径覆盖（兜底：覆盖所有未命中的 inline stroke） ===== */

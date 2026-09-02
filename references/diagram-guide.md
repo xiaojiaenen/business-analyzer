@@ -455,6 +455,31 @@ python scripts/check-mermaid.py src/sections
 - 输出 `PASS: N graphs / FAIL: M graphs`，失败时列出文件与解析错误；
 - 退出码 1 表示有失败，Phase 4 构建前应先跑一遍。
 
+### 3. 节点文字被截断/溢出 → 检查 CSS 字号与字体（v5 经验）
+
+浏览器里图能渲染、但**节点框内文字显示不全（被裁掉下半/右半）**，是 CSS 覆盖与
+Mermaid 布局测量不一致造成的，不是语法问题。症状：状态名/长标签的末行字被切，
+或"×××(30)"这类标签变成两行、第二行看不到。根因与修法（mermaid-overrides.css 必须遵守）：
+
+1. **字号必须与 mermaid 测量字号一致**：`MermaidDiagram` 组件里
+   `themeVariables.fontSize: "13px"`，布局按 13px 测量节点大小。CSS 若把节点文字
+   设成 `var(--ra-text-base)`（≈16px）会偏大 → 文字超出 fo 被裁。
+   → 节点文字固定 `font-size: 13px`；边/消息标签 12px；**不要用 rem 变量**。
+2. **行高不要放大**：fo 按 `line-height: 1.5` 预留高度，CSS 行高 ≤1.25 即可，
+   别设 1.4+。
+3. **font-family 不要换主题衬线体**：mermaid 用 SVG `<text>` 以
+   `"trebuchet ms",verdana,arial` 测量文字宽度，foreignObject 里的 HTML 渲染若换成
+   Georgia/宋体等更宽的字体，长标签会横向超框被裁。
+   → 节点/状态/边/消息文字统一 `font-family: "trebuchet ms","PingFang SC","Microsoft YaHei",verdana,arial,sans-serif`。
+4. **不要把 p/span 的 white-space 强制成 nowrap**：mermaid 对每个标签在
+   `<div>` 内联 style 上动态决策（短标签 `nowrap` 单行；长标签 `break-spaces` +
+   `width:200px` 自动折行并按行数预留 fo 高）。外部文档 CSS 会把 `<p>` 覆盖成
+   `normal` 导致单行标签被折行 → 正确做法是让 p/span `white-space: inherit`
+   （继承各自 div 的内联决策），**绝不要动 div 本身的 white-space，也不要全局 nowrap**。
+
+自查命令（无头 Chrome + CDP，遍历所有 foreignObject 比较文字 bbox 与 fo bbox，
+>0.5px 视为裁切）见 2026-09 修复记录；判断标准：全部页面 problems=0 才可交付。
+
 ---
 
 ## 核心提醒
