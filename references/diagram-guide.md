@@ -418,6 +418,45 @@ Phase 4 渲染时，agent 读取 `derivedStateMachine`，用方案 A（Mermaid s
 
 ---
 
+## 常见坑（写 Mermaid 图必读）
+
+### 1. 节点标签含半角括号/特殊字符 → 必须加引号包裹
+
+Mermaid 流程图节点标签里的半角圆括号 `( )`、竖线 `|`、花括号 `{ }` 等会直接导致解析失败，
+浏览器里显示"图表渲染失败"（MermaidDiagram 组件兜底），作者不易察觉。
+
+**错误写法**（解析失败）：
+```mermaid
+flowchart TB
+  S1[状态: 待生产(10)] --> S2[已完成(60)]
+```
+
+**正确写法**（标签用双引号包裹）：
+```mermaid
+flowchart TB
+  S1["状态: 待生产(10)"] --> S2["已完成(60)"]
+```
+
+> 凡标签内出现 `( )` `{ }` `|` `:` 等符号，一律 `["..."]` 包裹。状态机图（stateDiagram-v2）
+> 的状态名不受此限，但状态转移标签（`--xxx-->` 或 `: xxx`）里有括号同样要小心。
+
+### 2. 写完图必须跑语法校验
+
+不要等浏览器渲染才发现错误。用脚手架自带的校验脚本批量检查所有 Section 文件的 Mermaid 图：
+
+```bash
+# 在文档项目根目录（business-docs/）下运行
+node scripts/check-mermaid.mjs src/sections
+# 或经 python 包装
+python scripts/check-mermaid.py src/sections
+```
+
+- 依赖：项目内已装 jsdom（`npm install --no-save jsdom` 一次性安装）；
+- 输出 `PASS: N graphs / FAIL: M graphs`，失败时列出文件与解析错误；
+- 退出码 1 表示有失败，Phase 4 构建前应先跑一遍。
+
+---
+
 ## 核心提醒
 
 - **图表是仆人不是主人**：每个图必须配一句 caption 解释"这张图说明了什么"

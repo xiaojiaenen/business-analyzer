@@ -69,6 +69,33 @@ import { ThemeProvider, Article, Hero, Lead, Section, Aside, Table, Raw } from "
   用哪种来源由 Plan Checkpoint 的配图策略决定（见 `references/asset-policy.md`）。选配图
   `none` 只表示不用外部图片，`Raw` 不受影响。
 
+## 常见坑（写 JSX 必读）
+
+### 1. JSX 字符串内不要用 ASCII 双引号包中文引号
+
+JSX 属性值用 `"..."` 定界，若内容里再出现 ASCII 双引号会把字符串截断，
+报 `TS1005: ',' expected` / `TS1003: Identifier expected` 一类的解析错误。
+
+**错误写法**（编译失败）：
+```tsx
+<Table caption="核心概念清单（5-10 个"主角"）" />
+<Section title="管"制造过程"：谁在生产" />
+```
+
+**正确写法**（用中文书名号/方引号「」或转义）：
+```tsx
+<Table caption="核心概念清单（5-10 个「主角」）" />
+<Section title="管「制造过程」：谁在生产" />
+```
+
+> 在 JSX 属性（caption/title/label/purpose 等）和 JS 字符串字面量里，
+> 内容中需要引号时一律用「」『』等全角符号，不要用 ASCII `"` 或 `'`。
+
+### 2. 写完 Section 必须跑 `npm run build`（或 `npm run typecheck`）验证
+
+JSX 语法错误只有在构建时才会暴露。每写完一批 Section 文件就 `npm run build` 一次，
+不要攒到最后一次性发现几十个错误。构建失败时的修复路径见 SKILL.md「Phase 4 构建失败恢复」。
+
 ## 信息密度与组件比例
 
 见 `information-density.md`：100% 时长文优先、Raw 点亮关键概念；密度越低，视觉块比例

@@ -84,9 +84,23 @@ def main():
     target = Path(args.target).resolve()
 
     # 检查目标目录
+    # plan/review/analysis 是工作记忆目录，允许预先存在（Phase 3 可能已写入 plan.md /
+    # business-knowledge.md）。只要求工程文件（src/ package.json 等）不存在冲突。
     if target.exists() and any(target.iterdir()):
-        print(f"✗ 目标目录 '{target}' 已存在且非空，已中止。")
-        sys.exit(1)
+        work_dirs = {"plan", "review", "analysis"}
+        conflicts = [
+            p for p in target.iterdir()
+            if p.name not in work_dirs
+        ]
+        if conflicts:
+            print(
+                f"✗ 目标目录 '{target}' 存在非工作记忆文件/目录，已中止。\n"
+                f"  允许预置：plan/ review/ analysis/（工作记忆）\n"
+                f"  冲突项：{', '.join(p.name for p in conflicts[:8])}"
+            )
+            sys.exit(1)
+        else:
+            print(f"▸ 检测到已有工作记忆目录（plan/review/analysis），将保留并复用。")
 
     # 检查 npm
     if not check_npm():

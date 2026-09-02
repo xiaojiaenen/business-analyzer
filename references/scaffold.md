@@ -15,6 +15,11 @@ python scripts/scaffold.py --list-themes
 
 项目可建在**任意目录**，不需要在 reacticle 仓库内。
 
+> **允许预置工作记忆目录**：`plan/`、`review/`、`analysis/` 是工作记忆目录，
+> 允许在 scaffold 之前预先存在（Phase 3 可能已写入 `plan.md` / `business-knowledge.md`）。
+> scaffold 遇到这三个目录会**保留复用**而不是报错；只有 `src/`、`package.json` 等工程文件
+> 冲突时才会中止。若看到"存在非工作记忆文件/目录"报错，把多余内容移走再跑即可。
+
 ## 脚手架做什么
 
 - 创建项目目录 + 复制 Vite / React / TS / react-router 模板。
